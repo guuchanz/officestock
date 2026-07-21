@@ -1,5 +1,6 @@
 import { getDashboardStats } from "@/actions/stock.actions";
 import { getProducts } from "@/actions/product.actions";
+import { getDepartments } from "@/actions/department.actions";
 import MetricCard from "@/components/dashboard/MetricCard";
 import StockTable from "@/components/dashboard/StockTable";
 import { Package, AlertTriangle, TrendingDown, TrendingUp } from "lucide-react";
@@ -14,9 +15,10 @@ export default async function DashboardPage({
   const params = await searchParams;
   const search = params.q;
 
-  const [stats, products] = await Promise.all([
+  const [stats, products, departments] = await Promise.all([
     getDashboardStats(),
     getProducts(search),
+    getDepartments(),
   ]);
 
   return (
@@ -35,19 +37,19 @@ export default async function DashboardPage({
           label="สินค้าทั้งหมด"
           value={stats.totalProducts}
           icon={<Package size={20} />}
-          color="blue"
+          color="indigo"
         />
         <MetricCard
           label="สต็อกใกล้หมด"
           value={stats.lowStockProducts}
           icon={<AlertTriangle size={20} />}
-          color="red"
+          color="rose"
         />
         <MetricCard
           label="นำเข้าวันนี้"
           value={`+${stats.todayIn}`}
           icon={<TrendingUp size={20} />}
-          color="green"
+          color="emerald"
         />
         <MetricCard
           label="เบิกออกวันนี้"
@@ -58,7 +60,7 @@ export default async function DashboardPage({
       </div>
 
       {/* Stock Table */}
-      <StockTable products={products} search={search} />
+      <StockTable products={products} departments={departments} search={search} />
     </div>
   );
 }

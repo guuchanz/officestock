@@ -7,15 +7,16 @@ import { stockTransactionAction, type StockActionState } from "@/actions/stock.a
 import { REASON_OPTIONS, type ProductWithCategory } from "@/types";
 
 interface StockModalProps {
-  open:    boolean;
-  type:    "IN" | "OUT";
-  product: ProductWithCategory;
-  onClose: () => void;
+  open:        boolean;
+  type:        "IN" | "OUT";
+  product:     ProductWithCategory;
+  departments: { id: number; name: string }[];
+  onClose:     () => void;
 }
 
 const initState: StockActionState = { success: false, message: "" };
 
-export default function StockModal({ open, type, product, onClose }: StockModalProps) {
+export default function StockModal({ open, type, product, departments, onClose }: StockModalProps) {
   const [state, formAction, pending] = useActionState(stockTransactionAction, initState);
   const qtyRef  = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -128,6 +129,17 @@ export default function StockModal({ open, type, product, onClose }: StockModalP
               <option value="">-- เลือกเหตุผล --</option>
               {REASON_OPTIONS[type].map((r) => (
                 <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Department */}
+          <div>
+            <label className="label" htmlFor="departmentId">แผนก</label>
+            <select id="departmentId" name="departmentId" className="input" defaultValue="">
+              <option value="">-- ไม่ระบุ --</option>
+              {departments.map((d) => (
+                <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
           </div>

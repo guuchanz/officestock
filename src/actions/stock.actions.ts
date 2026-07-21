@@ -7,12 +7,13 @@ import { auth } from "@/lib/auth";
 
 const stockSchema = z
   .object({
-    productId: z.number().int().positive(),
-    type:      z.enum(["IN", "OUT"]),
-    quantity:  z.number().int().min(1, "จำนวนต้องมากกว่า 0"),
-    reason:    z.string().min(1, "กรุณาระบุเหตุผล"),
-    receiver:  z.string().optional(),
-    note:      z.string().optional(),
+    productId:    z.number().int().positive(),
+    type:         z.enum(["IN", "OUT"]),
+    quantity:     z.number().int().min(1, "จำนวนต้องมากกว่า 0"),
+    reason:       z.string().min(1, "กรุณาระบุเหตุผล"),
+    receiver:     z.string().optional(),
+    departmentId: z.number().int().positive().optional(),
+    note:         z.string().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.type === "OUT" && !data.receiver?.trim()) {
@@ -39,13 +40,16 @@ export async function stockTransactionAction(
     return { success: false, message: "กรุณาเข้าสู่ระบบก่อน" };
   }
 
+  const departmentIdRaw = formData.get("departmentId") as string;
+
   const raw = {
-    productId: Number(formData.get("productId")),
-    type:      formData.get("type") as "IN" | "OUT",
-    quantity:  Number(formData.get("quantity")),
-    reason:    formData.get("reason") as string,
-    receiver:  (formData.get("receiver") as string) || undefined,
-    note:      formData.get("note") as string | undefined,
+    productId:    Number(formData.get("productId")),
+    type:         formData.get("type") as "IN" | "OUT",
+    quantity:     Number(formData.get("quantity")),
+    reason:       formData.get("reason") as string,
+    receiver:     (formData.get("receiver") as string) || undefined,
+    departmentId: departmentIdRaw ? Number(departmentIdRaw) : undefined,
+    note:         formData.get("note") as string | undefined,
   };
 
   const parsed = stockSchema.safeParse(raw);
@@ -57,7 +61,7 @@ export async function stockTransactionAction(
     };
   }
 
-  const { productId, type, quantity, reason, receiver, note } = parsed.data;
+  const { productId, type, quantity, reason, receiver, departmentId, note } = parsed.data;
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -85,6 +89,7 @@ export async function stockTransactionAction(
           quantity,
           reason,
           receiver: type === "OUT" ? receiver!.trim() : null,
+          departmentId: departmentId ?? null,
           note: note || null,
           operatorId: session.user!.id!,
         },

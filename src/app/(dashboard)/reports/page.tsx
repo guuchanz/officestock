@@ -1,5 +1,8 @@
-import { getMonthlyCostReport } from "@/actions/report.actions";
+import { getMonthlyCostReport, getChartData } from "@/actions/report.actions";
+import { getDepartments } from "@/actions/department.actions";
 import { ArrowDownCircle, ArrowUpCircle, Wallet, FileSpreadsheet, FileText } from "lucide-react";
+import MetricCard from "@/components/dashboard/MetricCard";
+import MonthlyChartsSection from "@/components/reports/MonthlyChartsSection";
 
 export const revalidate = 0;
 
@@ -8,7 +11,11 @@ function currency(n: number) {
 }
 
 export default async function ReportsPage() {
-  const months = await getMonthlyCostReport();
+  const [months, chartData, departments] = await Promise.all([
+    getMonthlyCostReport(),
+    getChartData(),
+    getDepartments(),
+  ]);
 
   const totalIn    = months.reduce((s, m) => s + m.inCost, 0);
   const totalOut   = months.reduce((s, m) => s + m.outCost, 0);
@@ -22,35 +29,28 @@ export default async function ReportsPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="card p-5 flex items-center gap-4">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-green-100 text-green-600">
-            <ArrowDownCircle size={20} />
-          </div>
-          <div>
-            <p className="text-xs text-slate-500">มูลค่านำเข้ารวม</p>
-            <p className="text-lg font-bold text-slate-800">{currency(totalIn)}</p>
-          </div>
-        </div>
-        <div className="card p-5 flex items-center gap-4">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-red-100 text-red-600">
-            <ArrowUpCircle size={20} />
-          </div>
-          <div>
-            <p className="text-xs text-slate-500">มูลค่าเบิกออกรวม</p>
-            <p className="text-lg font-bold text-slate-800">{currency(totalOut)}</p>
-          </div>
-        </div>
-        <div className="card p-5 flex items-center gap-4">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-brand-100 text-brand-600">
-            <Wallet size={20} />
-          </div>
-          <div>
-            <p className="text-xs text-slate-500">มูลค่ารวมทั้งหมด</p>
-            <p className="text-lg font-bold text-slate-800">{currency(totalCost)}</p>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <MetricCard
+          label="มูลค่านำเข้ารวม"
+          value={currency(totalIn)}
+          icon={<ArrowDownCircle size={20} />}
+          color="emerald"
+        />
+        <MetricCard
+          label="มูลค่าเบิกออกรวม"
+          value={currency(totalOut)}
+          icon={<ArrowUpCircle size={20} />}
+          color="rose"
+        />
+        <MetricCard
+          label="มูลค่ารวมทั้งหมด"
+          value={currency(totalCost)}
+          icon={<Wallet size={20} />}
+          color="indigo"
+        />
       </div>
+
+      <MonthlyChartsSection data={chartData} allDepartments={departments} />
 
       {/* Monthly table */}
       <div className="card overflow-hidden">

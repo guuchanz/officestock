@@ -1,4 +1,5 @@
 import { getTransactions } from "@/actions/product.actions";
+import TransactionFilters from "@/components/transactions/TransactionFilters";
 import { clsx } from "clsx";
 import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 
@@ -7,11 +8,21 @@ export const revalidate = 0;
 export default async function TransactionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; q?: string; from?: string; to?: string }>;
 }) {
   const params = await searchParams;
   const page = Number(params.page) || 1;
-  const { items, total, pages } = await getTransactions(page, 25);
+  const { q, from, to } = params;
+  const { items, total, pages } = await getTransactions(page, 25, { q, from, to });
+
+  const pageHref = (p: number) => {
+    const sp = new URLSearchParams();
+    sp.set("page", String(p));
+    if (q) sp.set("q", q);
+    if (from) sp.set("from", from);
+    if (to) sp.set("to", to);
+    return `/transactions?${sp.toString()}`;
+  };
 
   return (
     <div className="space-y-5">
@@ -21,6 +32,8 @@ export default async function TransactionsPage({
       </div>
 
       <div className="card overflow-hidden">
+        <TransactionFilters q={q} from={from} to={to} />
+
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -31,6 +44,7 @@ export default async function TransactionsPage({
                 <th className="px-4 py-3 font-medium text-center">จำนวน</th>
                 <th className="px-4 py-3 font-medium">เหตุผล</th>
                 <th className="px-4 py-3 font-medium">ผู้รับ</th>
+                <th className="px-4 py-3 font-medium">แผนก</th>
                 <th className="px-4 py-3 font-medium">หมายเหตุ</th>
                 <th className="px-5 py-3 font-medium">ผู้ทำรายการ</th>
               </tr>
@@ -38,7 +52,7 @@ export default async function TransactionsPage({
             <tbody className="divide-y divide-slate-100">
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-16 text-center text-slate-400">
+                  <td colSpan={9} className="py-16 text-center text-slate-400">
                     ยังไม่มีประวัติรายการ
                   </td>
                 </tr>
@@ -97,6 +111,7 @@ export default async function TransactionsPage({
 
                     <td className="px-4 py-3.5 text-slate-600">{tx.reason}</td>
                     <td className="px-4 py-3.5 text-xs text-slate-600">{tx.receiver ?? "—"}</td>
+                    <td className="px-4 py-3.5 text-xs text-slate-600">{tx.department?.name ?? "—"}</td>
                     <td className="px-4 py-3.5 text-xs text-slate-400">{tx.note ?? "—"}</td>
                     <td className="px-5 py-3.5 text-xs">
                       <p className="font-medium text-slate-700">{tx.operator.name}</p>
@@ -115,7 +130,7 @@ export default async function TransactionsPage({
             {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
               <a
                 key={p}
-                href={`/transactions?page=${p}`}
+                href={pageHref(p)}
                 className={clsx(
                   "flex h-8 w-8 items-center justify-center rounded-lg text-sm font-medium transition-colors",
                   p === page

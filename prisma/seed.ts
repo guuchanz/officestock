@@ -11,6 +11,14 @@ async function main() {
     prisma.category.upsert({ where: { name: "อื่นๆ" }, update: {}, create: { name: "อื่นๆ" } }),
   ]);
 
+  // Seed departments
+  await Promise.all([
+    prisma.department.upsert({ where: { name: "ฝ่าย IT" }, update: {}, create: { name: "ฝ่าย IT" } }),
+    prisma.department.upsert({ where: { name: "ฝ่ายบัญชี" }, update: {}, create: { name: "ฝ่ายบัญชี" } }),
+    prisma.department.upsert({ where: { name: "ฝ่ายทรัพยากรบุคคล" }, update: {}, create: { name: "ฝ่ายทรัพยากรบุคคล" } }),
+    prisma.department.upsert({ where: { name: "ฝ่ายขาย" }, update: {}, create: { name: "ฝ่ายขาย" } }),
+  ]);
+
   // Seed admin user
   const admin = await prisma.user.upsert({
     where: { email: "admin@company.com" },

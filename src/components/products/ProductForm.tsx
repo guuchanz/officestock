@@ -10,15 +10,16 @@ import { createProductAction, updateProductAction, type ProductActionState } fro
 interface ProductFormProps {
   categories: { id: number; name: string }[];
   product?: {
-    id:         number;
-    code:       string;
-    name:       string;
-    categoryId: number;
-    minStock:   number;
-    location:   string | null;
-    unit:       string | null;
-    unitPrice:  number | null;
-    image:      string | null;
+    id:          number;
+    code:        string;
+    name:        string;
+    description: string | null;
+    categoryId:  number;
+    minStock:    number;
+    location:    string | null;
+    unit:        string | null;
+    unitPrice:   number | null;
+    image:       string | null;
   };
 }
 
@@ -64,6 +65,19 @@ export default function ProductForm({ categories, product }: ProductFormProps) {
         <label className="label" htmlFor="name">ชื่อสินค้า</label>
         <input id="name" name="name" className="input" placeholder="Logitech MX Master 3" defaultValue={product?.name} required />
         {fieldError("name") && <p className="mt-1 text-xs text-red-600">{fieldError("name")}</p>}
+      </div>
+
+      <div>
+        <label className="label" htmlFor="description">รายละเอียด / สเปกสินค้า</label>
+        <textarea
+          id="description"
+          name="description"
+          rows={3}
+          className="input resize-none"
+          placeholder="เช่น Wireless, Bluetooth 5.0, แบตเตอรี่ใช้งานได้ 70 วัน"
+          defaultValue={product?.description ?? ""}
+        />
+        {fieldError("description") && <p className="mt-1 text-xs text-red-600">{fieldError("description")}</p>}
       </div>
 
       <div className="grid grid-cols-2 gap-4">

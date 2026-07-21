@@ -1,4 +1,5 @@
 import { getProducts } from "@/actions/product.actions";
+import { getDepartments } from "@/actions/department.actions";
 import StockTable from "@/components/dashboard/StockTable";
 import Link from "next/link";
 import { PlusCircle } from "lucide-react";
@@ -11,7 +12,7 @@ export default async function ProductsPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const params = await searchParams;
-  const products = await getProducts(params.q);
+  const [products, departments] = await Promise.all([getProducts(params.q), getDepartments()]);
 
   return (
     <div className="space-y-5">
@@ -25,7 +26,7 @@ export default async function ProductsPage({
           เพิ่มสินค้าใหม่
         </Link>
       </div>
-      <StockTable products={products} search={params.q} />
+      <StockTable products={products} departments={departments} search={params.q} />
     </div>
   );
 }

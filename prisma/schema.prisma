@@ -61,10 +61,18 @@ model Category {
   createdAt DateTime  @default(now())
 }
 
+model Department {
+  id           Int                @id @default(autoincrement())
+  name         String             @unique
+  transactions StockTransaction[]
+  createdAt    DateTime           @default(now())
+}
+
 model Product {
   id           Int                @id @default(autoincrement())
   code         String             @unique
   name         String
+  description  String?            @db.Text
   category     Category           @relation(fields: [categoryId], references: [id])
   categoryId   Int
   totalStock   Int                @default(0)
@@ -79,17 +87,19 @@ model Product {
 }
 
 model StockTransaction {
-  id         Int      @id @default(autoincrement())
-  product    Product  @relation(fields: [productId], references: [id])
-  productId  Int
-  type       TxType
-  quantity   Int
-  reason     String
-  receiver   String?
-  note       String?  @db.Text
-  operator   User     @relation(fields: [operatorId], references: [id])
-  operatorId String
-  createdAt  DateTime @default(now())
+  id           Int         @id @default(autoincrement())
+  product      Product     @relation(fields: [productId], references: [id])
+  productId    Int
+  type         TxType
+  quantity     Int
+  reason       String
+  receiver     String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  departmentId Int?
+  note         String?     @db.Text
+  operator     User        @relation(fields: [operatorId], references: [id])
+  operatorId   String
+  createdAt    DateTime    @default(now())
 }
 
 enum TxType {

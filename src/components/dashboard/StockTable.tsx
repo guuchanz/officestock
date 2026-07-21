@@ -10,11 +10,12 @@ import type { ProductWithCategory } from "@/types";
 import StockModal from "@/components/stock/StockModal";
 
 interface StockTableProps {
-  products: ProductWithCategory[];
-  search?:  string;
+  products:    ProductWithCategory[];
+  departments: { id: number; name: string }[];
+  search?:     string;
 }
 
-export default function StockTable({ products, search }: StockTableProps) {
+export default function StockTable({ products, departments, search }: StockTableProps) {
   const router       = useRouter();
   const pathname     = usePathname();
   const [q, setQ]   = useState(search ?? "");
@@ -196,6 +197,7 @@ export default function StockTable({ products, search }: StockTableProps) {
           open={modal.open}
           type={modal.type}
           product={modal.product}
+          departments={departments}
           onClose={() => setModal((m) => ({ ...m, open: false }))}
         />
       )}

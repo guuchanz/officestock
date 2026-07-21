@@ -17,15 +17,16 @@ export interface ProductWithCategory {
 }
 
 export interface TransactionWithDetails {
-  id:        number;
-  type:      TxType;
-  quantity:  number;
-  reason:    string;
-  receiver:  string | null;
-  note:      string | null;
-  createdAt: Date;
-  product:   { id: number; code: string; name: string };
-  operator:  { id: string; name: string | null; email: string };
+  id:         number;
+  type:       TxType;
+  quantity:   number;
+  reason:     string;
+  receiver:   string | null;
+  note:       string | null;
+  createdAt:  Date;
+  product:    { id: number; code: string; name: string };
+  operator:   { id: string; name: string | null; email: string };
+  department: { id: number; name: string } | null;
 }
 
 export interface DashboardStats {
