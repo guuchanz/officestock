@@ -30,6 +30,7 @@ export default async function TransactionsPage({
                 <th className="px-4 py-3 font-medium">สินค้า</th>
                 <th className="px-4 py-3 font-medium text-center">จำนวน</th>
                 <th className="px-4 py-3 font-medium">เหตุผล</th>
+                <th className="px-4 py-3 font-medium">ผู้รับ</th>
                 <th className="px-4 py-3 font-medium">หมายเหตุ</th>
                 <th className="px-5 py-3 font-medium">ผู้ทำรายการ</th>
               </tr>
@@ -37,7 +38,7 @@ export default async function TransactionsPage({
             <tbody className="divide-y divide-slate-100">
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-16 text-center text-slate-400">
+                  <td colSpan={8} className="py-16 text-center text-slate-400">
                     ยังไม่มีประวัติรายการ
                   </td>
                 </tr>
@@ -95,6 +96,7 @@ export default async function TransactionsPage({
                     </td>
 
                     <td className="px-4 py-3.5 text-slate-600">{tx.reason}</td>
+                    <td className="px-4 py-3.5 text-xs text-slate-600">{tx.receiver ?? "—"}</td>
                     <td className="px-4 py-3.5 text-xs text-slate-400">{tx.note ?? "—"}</td>
                     <td className="px-5 py-3.5 text-xs">
                       <p className="font-medium text-slate-700">{tx.operator.name}</p>

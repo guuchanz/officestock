@@ -70,6 +70,9 @@ model Product {
   totalStock   Int                @default(0)
   minStock     Int                @default(5)
   location     String?
+  unit         String?
+  unitPrice    Decimal?           @db.Decimal(10, 2)
+  image        String?
   transactions StockTransaction[]
   updatedAt    DateTime           @updatedAt
   createdAt    DateTime           @default(now())
@@ -82,6 +85,7 @@ model StockTransaction {
   type       TxType
   quantity   Int
   reason     String
+  receiver   String?
   note       String?  @db.Text
   operator   User     @relation(fields: [operatorId], references: [id])
   operatorId String

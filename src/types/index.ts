@@ -9,6 +9,9 @@ export interface ProductWithCategory {
   totalStock: number;
   minStock:   number;
   location:   string | null;
+  unit:       string | null;
+  unitPrice:  number | null;
+  image:      string | null;
   updatedAt:  Date;
   category:   { id: number; name: string };
 }
@@ -18,6 +21,7 @@ export interface TransactionWithDetails {
   type:      TxType;
   quantity:  number;
   reason:    string;
+  receiver:  string | null;
   note:      string | null;
   createdAt: Date;
   product:   { id: number; code: string; name: string };

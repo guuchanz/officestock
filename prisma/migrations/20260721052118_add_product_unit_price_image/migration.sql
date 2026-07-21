@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE `product` ADD COLUMN `image` VARCHAR(191) NULL,
+    ADD COLUMN `unit` VARCHAR(191) NULL,
+    ADD COLUMN `unitPrice` DECIMAL(10, 2) NULL;

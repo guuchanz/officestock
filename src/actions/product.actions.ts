@@ -2,6 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { randomUUID } from "crypto";
+import { mkdir, writeFile } from "fs/promises";
+import path from "path";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
@@ -11,11 +14,41 @@ const productSchema = z.object({
   categoryId: z.number().int().positive("กรุณาเลือกหมวดหมู่"),
   minStock:   z.number().int().min(0).default(5),
   location:   z.string().optional(),
+  unit:       z.string().optional(),
+  unitPrice:  z.number().min(0).optional(),
 });
 
-export async function createProductAction(_prev: any, formData: FormData) {
+const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+
+async function saveProductImage(file: File): Promise<string | undefined> {
+  if (!file || file.size === 0) return undefined;
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    throw new Error("รองรับเฉพาะไฟล์รูปภาพ (png, jpg, webp, gif)");
+  }
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const ext = path.extname(file.name) || "";
+  const filename = `${randomUUID()}${ext}`;
+  const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
+  await mkdir(uploadDir, { recursive: true });
+  await writeFile(path.join(uploadDir, filename), buffer);
+  return `/uploads/products/${filename}`;
+}
+
+export type ProductActionState = {
+  success: boolean;
+  message: string;
+  errors?: Record<string, string[]>;
+};
+
+export async function createProductAction(
+  _prev: ProductActionState,
+  formData: FormData
+): Promise<ProductActionState> {
   const session = await auth();
-  if (!session?.user) return { success: false, message: "Unauthorized" };
+  if (!session?.user) return { success: false, message: "กรุณาเข้าสู่ระบบก่อน" };
+
+  const unitPriceRaw = formData.get("unitPrice") as string;
 
   const raw = {
     code:       formData.get("code") as string,
@@ -23,6 +56,8 @@ export async function createProductAction(_prev: any, formData: FormData) {
     categoryId: Number(formData.get("categoryId")),
     minStock:   Number(formData.get("minStock")) || 5,
     location:   formData.get("location") as string | undefined,
+    unit:       (formData.get("unit") as string) || undefined,
+    unitPrice:  unitPriceRaw ? Number(unitPriceRaw) : undefined,
   };
 
   const parsed = productSchema.safeParse(raw);
@@ -31,17 +66,77 @@ export async function createProductAction(_prev: any, formData: FormData) {
   }
 
   try {
-    await prisma.product.create({ data: parsed.data });
+    const imageFile = formData.get("image") as File | null;
+    const image = imageFile ? await saveProductImage(imageFile) : undefined;
+
+    await prisma.product.create({ data: { ...parsed.data, image } });
     revalidatePath("/dashboard");
     return { success: true, message: "เพิ่มสินค้าสำเร็จ" };
   } catch (e: any) {
     if (e.code === "P2002") return { success: false, message: "รหัสสินค้านี้มีอยู่แล้ว" };
+    if (e instanceof Error && e.message.includes("รูปภาพ")) return { success: false, message: e.message };
     return { success: false, message: "เกิดข้อผิดพลาด" };
   }
 }
 
+export async function updateProductAction(
+  _prev: ProductActionState,
+  formData: FormData
+): Promise<ProductActionState> {
+  const session = await auth();
+  if (!session?.user) return { success: false, message: "กรุณาเข้าสู่ระบบก่อน" };
+
+  const id = Number(formData.get("id"));
+  if (!id) return { success: false, message: "ไม่พบสินค้า" };
+
+  const unitPriceRaw = formData.get("unitPrice") as string;
+
+  const raw = {
+    code:       formData.get("code") as string,
+    name:       formData.get("name") as string,
+    categoryId: Number(formData.get("categoryId")),
+    minStock:   Number(formData.get("minStock")) || 5,
+    location:   formData.get("location") as string | undefined,
+    unit:       (formData.get("unit") as string) || undefined,
+    unitPrice:  unitPriceRaw ? Number(unitPriceRaw) : undefined,
+  };
+
+  const parsed = productSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { success: false, message: "ข้อมูลไม่ถูกต้อง", errors: parsed.error.flatten().fieldErrors };
+  }
+
+  try {
+    const imageFile = formData.get("image") as File | null;
+    const image = imageFile ? await saveProductImage(imageFile) : undefined;
+
+    await prisma.product.update({
+      where: { id },
+      data: { ...parsed.data, ...(image ? { image } : {}) },
+    });
+    revalidatePath("/dashboard");
+    revalidatePath("/products");
+    return { success: true, message: "แก้ไขสินค้าสำเร็จ" };
+  } catch (e: any) {
+    if (e.code === "P2002") return { success: false, message: "รหัสสินค้านี้มีอยู่แล้ว" };
+    if (e.code === "P2025") return { success: false, message: "ไม่พบสินค้า" };
+    if (e instanceof Error && e.message.includes("รูปภาพ")) return { success: false, message: e.message };
+    return { success: false, message: "เกิดข้อผิดพลาด" };
+  }
+}
+
+export async function getProductById(id: number) {
+  const product = await prisma.product.findUnique({
+    where: { id },
+    include: { category: { select: { id: true, name: true } } },
+  });
+  if (!product) return null;
+
+  return { ...product, unitPrice: product.unitPrice ? Number(product.unitPrice) : null };
+}
+
 export async function getProducts(search?: string) {
-  return prisma.product.findMany({
+  const products = await prisma.product.findMany({
     where: search
       ? {
           OR: [
@@ -54,6 +149,11 @@ export async function getProducts(search?: string) {
     include: { category: { select: { id: true, name: true } } },
     orderBy: { name: "asc" },
   });
+
+  return products.map((p) => ({
+    ...p,
+    unitPrice: p.unitPrice ? Number(p.unitPrice) : null,
+  }));
 }
 
 export async function getCategories() {

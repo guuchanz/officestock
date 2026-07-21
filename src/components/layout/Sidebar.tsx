@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, History, PackagePlus, Package } from "lucide-react";
+import { LayoutDashboard, History, PackagePlus, Package, FileBarChart } from "lucide-react";
 import { clsx } from "clsx";
 
 const nav = [
   { href: "/dashboard",     label: "ภาพรวม",         icon: LayoutDashboard },
   { href: "/products",      label: "สินค้าคงคลัง",   icon: Package },
   { href: "/transactions",  label: "ประวัติรายการ",   icon: History },
-  { href: "/products/new",  label: "เพิ่มสินค้าใหม่", icon: PackagePlus },
+  { href: "/reports",       label: "รายงานต้นทุน",   icon: FileBarChart },
+  // { href: "/products/new",  label: "เพิ่มสินค้าใหม่", icon: PackagePlus },
 ];
 
 export default function Sidebar() {

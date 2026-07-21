@@ -5,13 +5,24 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
-const stockSchema = z.object({
-  productId: z.number().int().positive(),
-  type:      z.enum(["IN", "OUT"]),
-  quantity:  z.number().int().min(1, "จำนวนต้องมากกว่า 0"),
-  reason:    z.string().min(1, "กรุณาระบุเหตุผล"),
-  note:      z.string().optional(),
-});
+const stockSchema = z
+  .object({
+    productId: z.number().int().positive(),
+    type:      z.enum(["IN", "OUT"]),
+    quantity:  z.number().int().min(1, "จำนวนต้องมากกว่า 0"),
+    reason:    z.string().min(1, "กรุณาระบุเหตุผล"),
+    receiver:  z.string().optional(),
+    note:      z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.type === "OUT" && !data.receiver?.trim()) {
+      ctx.addIssue({
+        code:    z.ZodIssueCode.custom,
+        path:    ["receiver"],
+        message: "กรุณาระบุผู้รับ",
+      });
+    }
+  });
 
 export type StockActionState = {
   success: boolean;
@@ -33,6 +44,7 @@ export async function stockTransactionAction(
     type:      formData.get("type") as "IN" | "OUT",
     quantity:  Number(formData.get("quantity")),
     reason:    formData.get("reason") as string,
+    receiver:  (formData.get("receiver") as string) || undefined,
     note:      formData.get("note") as string | undefined,
   };
 
@@ -45,7 +57,7 @@ export async function stockTransactionAction(
     };
   }
 
-  const { productId, type, quantity, reason, note } = parsed.data;
+  const { productId, type, quantity, reason, receiver, note } = parsed.data;
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -72,6 +84,7 @@ export async function stockTransactionAction(
           type,
           quantity,
           reason,
+          receiver: type === "OUT" ? receiver!.trim() : null,
           note: note || null,
           operatorId: session.user!.id!,
         },

@@ -132,6 +132,23 @@ export default function StockModal({ open, type, product, onClose }: StockModalP
             </select>
           </div>
 
+          {/* Receiver (OUT only) */}
+          {!isIn && (
+            <div>
+              <label className="label" htmlFor="receiver">ผู้รับ</label>
+              <input
+                id="receiver"
+                name="receiver"
+                className="input"
+                placeholder="ชื่อผู้รับสินค้า"
+                required
+              />
+              {state.errors?.receiver?.[0] && (
+                <p className="mt-1 text-xs text-red-600">{state.errors.receiver[0]}</p>
+              )}
+            </div>
+          )}
+
           {/* Note */}
           <div>
             <label className="label">
