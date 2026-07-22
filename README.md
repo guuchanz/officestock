@@ -113,6 +113,7 @@ src/
 │   │   ├── reports/[month]/       # ดาวน์โหลดรายงาน Excel/PDF รายเดือน
 │   │   ├── reports/year/[year]/   # ดาวน์โหลดรายงาน Excel/PDF รายปี
 │   │   └── transactions/export/   # ดาวน์โหลดประวัติรายการเป็น Excel
+│   ├── uploads/[...path]/         # serve ไฟล์อัปโหลดจาก UPLOAD_DIR (อ่าน disk ทุก request + ตรวจ auth)
 │   ├── login/                     # หน้า Login
 │   └── reset-password/            # บังคับเปลี่ยนรหัสผ่านครั้งแรก (ผู้ใช้ที่ถูก admin สร้าง/รีเซ็ต)
 ├── components/
@@ -133,6 +134,7 @@ src/
 │   ├── auth.ts                 # NextAuth config เต็มรูปแบบ (Credentials + bcrypt) — ใช้ใน Server Components/Actions เท่านั้น
 │   ├── auth.config.ts          # NextAuth config แบบ edge-safe (ไม่มี provider) — ใช้ใน middleware
 │   ├── reportExport.ts         # ตัวสร้างไฟล์ Excel/PDF ที่ใช้ร่วมกันระหว่างรายงานรายเดือน/รายปี
+│   ├── uploads.ts              # ที่เก็บไฟล์อัปโหลด (UPLOAD_DIR), บันทึกไฟล์, กัน path traversal
 │   └── chart-colors.ts         # Categorical palette สำหรับกราฟ
 └── types/                      # Shared TypeScript types
 
@@ -186,41 +188,96 @@ messages/               # ไฟล์แปลภาษา ไทย (th.json) 
 5. **Auth**: Middleware ป้องกันทุก route นอกจาก `/login`, บังคับ `/reset-password` เมื่อ `mustResetPassword` เป็น true
 6. **Role-based access**: ทุก Server Action ที่เกี่ยวกับผู้ใช้งานตรวจสอบ role ฝั่ง server (ไม่ใช่แค่ซ่อน UI) — Moderator ไม่สามารถแก้ไข/รีเซ็ตรหัสผ่าน/ลบผู้ใช้งานได้แม้จะเรียก action ตรงๆ
 7. **Edge-safe middleware**: `src/lib/auth.ts` (มี bcrypt + Prisma) ใช้เฉพาะใน Server Components/Actions เท่านั้น ส่วน `middleware.ts` ใช้ `src/lib/auth.config.ts` ที่ไม่มี provider เพื่อให้รันได้ใน Edge Runtime
+8. **ไฟล์อัปโหลด**: เก็บนอก `public/` และ serve ผ่าน route handler ที่ตรวจสอบ session ก่อนทุกครั้ง — ผู้ที่ไม่ได้ล็อกอินเข้าถึงรูปสินค้า/PDF ใบเสนอราคาไม่ได้ (ได้ `401`), ชื่อไฟล์ถูกสุ่มเป็น UUID และ path ถูกตรวจกัน directory traversal
 
 ---
 
 ## 🚢 Deploy สู่ Production
 
+### ขั้นตอนการรัน (ทำตามลำดับ)
+
 ```bash
+git pull
 npm ci                        # ติดตั้งแบบตรงกับ package-lock.json
+npx prisma generate           # สร้าง Prisma Client (ไม่มี postinstall script ในโปรเจกต์นี้)
 npx prisma migrate deploy     # apply migration กับฐานข้อมูล production (ห้ามใช้ migrate dev)
-npm run build
+npm run build                 # ⚠️ ต้องสำเร็จก่อนเสมอ — ดูหมายเหตุด้านล่าง
 npm run start                 # รัน Node.js server จริงบน port 3000
 ```
 
-**สิ่งที่ต้องแก้ก่อน build จริงเสมอ** — `next.config.ts`:
+> **`npm run build` ต้องผ่านก่อนเสมอ** — `next start` ไม่ได้ build อะไรเลย มันแค่อ่านผลลัพธ์ที่ `next build` สร้างไว้ในโฟลเดอร์ `.next/`
+> ถ้า build ล้มเหลวแล้วข้ามไปรัน `npm run start` จะเจอ error:
+> `Could not find a production build in the '.next' directory`
+> ให้ย้อนไปดู output ของ `npm run build` ว่ามี `Error:` อะไร — error ตอน start เป็นแค่ปลายเหตุ
+>
+> build ที่สำเร็จจะจบด้วยตารางรายการ route (มี `ƒ /uploads/[...path]` อยู่ด้วย)
+
+### ⚠️ โฟลเดอร์ `.next/` ไม่ได้อยู่ใน git
+
+`.next/` คือผลลัพธ์จากการ build ถูก gitignore ไว้ — **ทุกเครื่องต้อง `npm run build` เอง**
+
+และ **ห้ามรัน `npm run dev` บนเครื่อง production** เพราะ `next dev` จะเขียนทับ `.next/` ด้วยไฟล์แบบ development ซึ่งไม่มี production build อยู่ข้างใน ทำให้ `npm run start` พังด้วย error เดียวกันข้างบน — ถ้าเผลอรันไปแล้วให้ลบ `.next/` ทิ้งแล้ว build ใหม่:
+
+```bash
+rm -rf .next && npm run build      # Windows: rmdir /s /q .next
+```
+
+### Environment Variables
+
+`.env` ถูก gitignore ไว้ — **ไม่ได้ติดมากับ `git pull`** ต้องสร้างเองบนเครื่อง production (คัดลอกจาก `.env.example`)
+
+| ตัวแปร | หมายเหตุ |
+|---|---|
+| `DATABASE_URL` | ชี้ไปที่ MySQL production |
+| `AUTH_SECRET` | generate ด้วย `openssl rand -base64 32` — ถ้าเปลี่ยนค่า session ที่ล็อกอินค้างไว้ทั้งหมดจะหลุด |
+| `AUTH_URL` / `NEXTAUTH_URL` | โดเมนจริง เช่น `https://your-domain.com` |
+| `UPLOAD_DIR` | โฟลเดอร์เก็บไฟล์อัปโหลด (ดูหัวข้อถัดไป) — ถ้าไม่ตั้งจะใช้ `./var/uploads` |
+
+### 📁 ไฟล์อัปโหลด (รูปสินค้า / PDF ใบเสนอราคา)
+
+ไฟล์อัปโหลด **ห้ามเก็บไว้ใน `public/`** เพราะ `next start` จะอ่านรายชื่อไฟล์ใน `public/` แค่ครั้งเดียวตอน server เริ่มทำงานแล้ว cache ไว้ ไฟล์ที่อัปโหลดเข้ามาทีหลังจะไม่ถูก serve จนกว่าจะ restart — จะเจอ error:
+
+```
+⨯ The requested resource isn't a valid image for /uploads/products/xxx.png
+  received text/html; charset=utf-8
+```
+
+(บน `npm run dev` จะไม่เจอปัญหานี้ เพราะ dev อ่าน filesystem ใหม่ทุก request — เป็นเหตุผลที่ bug นี้มักโผล่เฉพาะตอนขึ้น production)
+
+ระบบจึงเก็บไฟล์ไว้ที่ `UPLOAD_DIR` (นอก `public/`) แล้ว serve ผ่าน route handler `src/app/uploads/[...path]/route.ts` ซึ่งอ่านไฟล์จาก disk ใหม่ทุก request, ตรวจสอบ auth, และกัน path traversal — URL ที่ใช้ยังเป็น `/uploads/...` เหมือนเดิม ค่าที่เก็บในฐานข้อมูลจึงไม่ต้องแก้
+
+**ตั้ง `UPLOAD_DIR` เป็น path ถาวรนอกโฟลเดอร์โปรเจกต์** เพื่อไม่ให้ไฟล์ผู้ใช้หายตอน deploy ใหม่หรือ clone ใหม่:
+
+```env
+UPLOAD_DIR="/var/lib/officestock/uploads"     # Windows: UPLOAD_DIR="D:\ITStockData\uploads"
+```
+
+ถ้าย้ายมาจากเวอร์ชันเก่าที่เก็บใน `public/uploads/` ให้คัดลอกไฟล์เดิมไปไว้ใน `UPLOAD_DIR` โดยคงโครงสร้างโฟลเดอร์ย่อย `products/` และ `quotations/` ไว้
+
+### สิ่งที่ต้องแก้ก่อน build จริงเสมอ
+
+`next.config.ts`:
 
 ```ts
 serverActions: {
   allowedOrigins: ["localhost:3000"],   // ต้องเพิ่ม domain จริงก่อน deploy
+  bodySizeLimit: "10mb",                // ต้อง ≥ ขนาดไฟล์ที่อนุญาต (PDF จำกัดไว้ 10MB)
 ```
 
-ทุกฟอร์มในระบบนี้เป็น Server Action — ถ้าไม่เพิ่ม domain จริงใน `allowedOrigins` การ submit ทุกฟอร์มจะถูกปฏิเสธใน production
+- ทุกฟอร์มในระบบนี้เป็น Server Action — ถ้าไม่เพิ่ม domain จริงใน `allowedOrigins` การ submit ทุกฟอร์มจะถูกปฏิเสธใน production
+- `bodySizeLimit` ต้องไม่ต่ำกว่าขนาดไฟล์ที่ระบบอนุญาต ถ้าตั้งต่ำเกิน (เช่น `1mb`) ไฟล์จะถูกปฏิเสธตั้งแต่ก่อนเข้า validation ของแอป — รูปจากมือถือมักเกิน 1MB
 
-**ข้อจำกัดของ hosting**: ระบบนี้ต้องรันบน Node.js server ที่มี persistent disk (VPS/Docker) ไม่เหมาะกับ serverless/edge platform (เช่น Vercel) โดยไม่ปรับโค้ดเพิ่ม เพราะ:
-- `bcrypt` เป็น native addon ต้องการ Node.js runtime จริง
-- ไฟล์ที่อัปโหลด (รูปสินค้า, PDF ใบเสนอราคา) เขียนลง `public/uploads/` บน disk โดยตรง — serverless/edge มักมี filesystem แบบ ephemeral ที่ข้อมูลจะหายเมื่อ deploy ใหม่
+### ข้อจำกัดของ hosting
 
-ตั้งค่า Environment Variables บน host จริง (ห้าม commit `.env`):
-- `DATABASE_URL` — ชี้ไปที่ MySQL production
-- `AUTH_SECRET` — generate ใหม่ด้วย `openssl rand -base64 32`
-- `AUTH_URL` — โดเมนจริง เช่น `https://your-domain.com`
+ระบบนี้ต้องรันบน Node.js server ที่มี persistent disk (VPS/Docker) ไม่เหมาะกับ serverless/edge platform (เช่น Vercel) โดยไม่ปรับโค้ดเพิ่ม เพราะ:
+- `bcrypt` เป็น native addon ต้องการ Node.js runtime จริง (ถ้า `npm ci` fail บน Windows ด้วย error เกี่ยวกับ `node-gyp`/`MSBuild` ให้ติดตั้ง build tools หรือเปลี่ยนไปใช้ `bcryptjs`)
+- ไฟล์อัปโหลดเขียนลง disk ที่ `UPLOAD_DIR` — serverless/edge มักมี filesystem แบบ ephemeral ที่ข้อมูลจะหายเมื่อ deploy ใหม่ และถ้ารันหลาย instance ไฟล์จะไม่ sync กัน (ดู Next Steps เรื่อง object storage)
 
 ---
 
 ## 🔜 Next Steps
 
-- [ ] Dockerize สำหรับ deployment (Dockerfile + docker-compose สำหรับ app + MySQL)
-- [ ] ย้ายไฟล์อัปโหลด (รูปสินค้า, PDF ใบเสนอราคา) ไป object storage (เช่น S3-compatible) เพื่อรองรับ multi-instance/serverless
+- [ ] Dockerize สำหรับ deployment (Dockerfile + docker-compose สำหรับ app + MySQL) — อย่าลืม mount `UPLOAD_DIR` เป็น volume
+- [ ] ย้ายไฟล์อัปโหลดไป object storage (เช่น S3-compatible / MinIO) เพื่อรองรับ multi-instance/serverless — แก้ที่ `saveUpload()` ใน `src/lib/uploads.ts` จุดเดียว ส่วนอื่นของแอปไม่ต้องแก้
 - [ ] Email notification เมื่อสต็อกต่ำกว่า minStock
 - [ ] QR Code สำหรับแต่ละสินค้า
