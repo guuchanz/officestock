@@ -11,6 +11,17 @@ const nextConfig: NextConfig = {
     },
   },
   serverExternalPackages: ["pdfkit", "fontkit"],
+  
+  images: {
+    remotePatterns: [
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "5000", // 👈 เปลี่ยนเป็น Port ของ Backend คุณ (ถ้ามี)
+        pathname: "/uploads/**",
+      },
+    ],
+  },
 };
 
 export default withNextIntl(nextConfig);
