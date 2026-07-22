@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useActionState, useTransition } from "react";
 import { clsx } from "clsx";
+import { useTranslations } from "next-intl";
 import { Pencil, Trash2, Check, X } from "lucide-react";
 import {
   updateDepartmentAction,
@@ -16,6 +17,8 @@ interface DepartmentRowProps {
 const initState: DepartmentActionState = { success: false, message: "" };
 
 export default function DepartmentRow({ department }: DepartmentRowProps) {
+  const t  = useTranslations("DepartmentRow");
+  const tc = useTranslations("Common");
   const [name, setName] = useState(department.name);
   const [editValue, setEditValue] = useState(department.name);
   const [editing, setEditing] = useState(false);
@@ -36,7 +39,7 @@ export default function DepartmentRow({ department }: DepartmentRowProps) {
   };
 
   const handleDelete = () => {
-    if (!window.confirm(`ต้องการลบแผนก "${name}" ใช่หรือไม่?`)) return;
+    if (!window.confirm(t("confirmDelete", { name }))) return;
     setDeleteError("");
     startDelete(async () => {
       const res = await deleteDepartmentAction(department.id);
@@ -62,7 +65,7 @@ export default function DepartmentRow({ department }: DepartmentRowProps) {
             type="submit"
             disabled={pending}
             className={clsx("btn-ghost p-1.5 text-green-600", pending && "opacity-60 cursor-not-allowed")}
-            title="บันทึก"
+            title={tc("save")}
           >
             <Check size={16} />
           </button>
@@ -70,7 +73,7 @@ export default function DepartmentRow({ department }: DepartmentRowProps) {
             type="button"
             onClick={() => setEditing(false)}
             className="btn-ghost p-1.5 text-slate-400"
-            title="ยกเลิก"
+            title={tc("cancel")}
           >
             <X size={16} />
           </button>
@@ -87,15 +90,15 @@ export default function DepartmentRow({ department }: DepartmentRowProps) {
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-slate-800">{name}</span>
         <div className="flex items-center gap-1">
-          <span className="text-xs text-slate-400 mr-2">{department._count.transactions} รายการ</span>
-          <button onClick={startEditing} className="btn-ghost p-1.5" title="แก้ไข">
+          <span className="text-xs text-slate-400 mr-2">{t("transactionsCount", { count: department._count.transactions })}</span>
+          <button onClick={startEditing} className="btn-ghost p-1.5" title={tc("edit")}>
             <Pencil size={14} />
           </button>
           <button
             onClick={handleDelete}
             disabled={isDeleting}
             className={clsx("btn-ghost p-1.5 text-red-500", isDeleting && "opacity-60 cursor-not-allowed")}
-            title="ลบ"
+            title={tc("delete")}
           >
             <Trash2 size={14} />
           </button>

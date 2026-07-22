@@ -14,8 +14,10 @@ model User {
   emailVerified DateTime?
   image         String?
   password      String?
+  mustResetPassword Boolean        @default(false)
   role          Role               @default(STAFF)
   transactions  StockTransaction[]
+  quotations    Quotation[]
   accounts      Account[]
   sessions      Session[]
   createdAt     DateTime           @default(now())
@@ -51,6 +53,7 @@ model Session {
 
 enum Role {
   ADMIN
+  MODERATOR
   STAFF
 }
 
@@ -71,6 +74,7 @@ model Department {
 model Product {
   id           Int                @id @default(autoincrement())
   code         String             @unique
+  lotNo        String?
   name         String
   description  String?            @db.Text
   category     Category           @relation(fields: [categoryId], references: [id])
@@ -105,4 +109,20 @@ model StockTransaction {
 enum TxType {
   IN
   OUT
+}
+
+model Quotation {
+  id           Int       @id @default(autoincrement())
+  qtNumber     String    @default("")
+  supplierName String
+  description  String?   @db.Text
+  orderDate    DateTime
+  receiveDate  DateTime?
+  totalAmount  Decimal   @db.Decimal(10, 2)
+  fileUrl      String
+  fileName     String
+  uploadedBy   User      @relation(fields: [uploadedById], references: [id])
+  uploadedById String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }

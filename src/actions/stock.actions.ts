@@ -2,28 +2,32 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
-const stockSchema = z
-  .object({
-    productId:    z.number().int().positive(),
-    type:         z.enum(["IN", "OUT"]),
-    quantity:     z.number().int().min(1, "จำนวนต้องมากกว่า 0"),
-    reason:       z.string().min(1, "กรุณาระบุเหตุผล"),
-    receiver:     z.string().optional(),
-    departmentId: z.number().int().positive().optional(),
-    note:         z.string().optional(),
-  })
-  .superRefine((data, ctx) => {
-    if (data.type === "OUT" && !data.receiver?.trim()) {
-      ctx.addIssue({
-        code:    z.ZodIssueCode.custom,
-        path:    ["receiver"],
-        message: "กรุณาระบุผู้รับ",
-      });
-    }
-  });
+async function buildStockSchema() {
+  const t = await getTranslations("StockActions");
+  return z
+    .object({
+      productId:    z.number().int().positive(),
+      type:         z.enum(["IN", "OUT"]),
+      quantity:     z.number().int().min(1, t("qtyMin")),
+      reason:       z.string().min(1, t("reasonRequired")),
+      receiver:     z.string().optional(),
+      departmentId: z.number().int().positive().optional(),
+      note:         z.string().optional(),
+    })
+    .superRefine((data, ctx) => {
+      if (data.type === "OUT" && !data.receiver?.trim()) {
+        ctx.addIssue({
+          code:    z.ZodIssueCode.custom,
+          path:    ["receiver"],
+          message: t("receiverRequired"),
+        });
+      }
+    });
+}
 
 export type StockActionState = {
   success: boolean;
@@ -36,8 +40,9 @@ export async function stockTransactionAction(
   formData: FormData
 ): Promise<StockActionState> {
   const session = await auth();
+  const t = await getTranslations("StockActions");
   if (!session?.user?.id) {
-    return { success: false, message: "กรุณาเข้าสู่ระบบก่อน" };
+    return { success: false, message: t("loginRequired") };
   }
 
   const departmentIdRaw = formData.get("departmentId") as string;
@@ -52,11 +57,12 @@ export async function stockTransactionAction(
     note:         formData.get("note") as string | undefined,
   };
 
+  const stockSchema = await buildStockSchema();
   const parsed = stockSchema.safeParse(raw);
   if (!parsed.success) {
     return {
       success: false,
-      message: "ข้อมูลไม่ถูกต้อง",
+      message: t("invalidData"),
       errors: parsed.error.flatten().fieldErrors,
     };
   }
@@ -69,10 +75,10 @@ export async function stockTransactionAction(
         where: { id: productId },
         select: { id: true, totalStock: true },
       });
-      if (!product) throw new Error("ไม่พบสินค้า");
+      if (!product) throw new Error(t("productNotFound"));
 
       if (type === "OUT" && product.totalStock < quantity) {
-        throw new Error(`สต็อกไม่พอ: มีเพียง ${product.totalStock} ชิ้น`);
+        throw new Error(t("insufficientStock", { qty: product.totalStock }));
       }
 
       const delta = type === "IN" ? quantity : -quantity;
@@ -102,11 +108,11 @@ export async function stockTransactionAction(
     return {
       success: true,
       message: type === "IN"
-        ? `นำเข้าสต็อก ${quantity} ชิ้น สำเร็จ`
-        : `เบิกออก ${quantity} ชิ้น สำเร็จ`,
+        ? t("importSuccess", { qty: quantity })
+        : t("withdrawSuccess", { qty: quantity }),
     };
   } catch (err: any) {
-    return { success: false, message: err.message ?? "เกิดข้อผิดพลาด" };
+    return { success: false, message: err.message ?? t("genericError") };
   }
 }
 

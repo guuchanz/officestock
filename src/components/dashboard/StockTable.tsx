@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { clsx } from "clsx";
+import { useTranslations } from "next-intl";
 import { Search, ArrowDownCircle, ArrowUpCircle, Package, Pencil } from "lucide-react";
 import type { ProductWithCategory } from "@/types";
 import StockModal from "@/components/stock/StockModal";
@@ -16,6 +17,8 @@ interface StockTableProps {
 }
 
 export default function StockTable({ products, departments, search }: StockTableProps) {
+  const t             = useTranslations("StockTable");
+  const tc            = useTranslations("Common");
   const router       = useRouter();
   const pathname     = usePathname();
   const [q, setQ]   = useState(search ?? "");
@@ -59,13 +62,13 @@ export default function StockTable({ products, departments, search }: StockTable
       <div className="card overflow-hidden">
         {/* Table Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <h2 className="font-semibold text-slate-800">รายการสินค้าคงคลัง</h2>
+          <h2 className="font-semibold text-slate-800">{t("title")}</h2>
           <div className="relative">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               value={q}
               onChange={(e) => handleSearch(e.target.value)}
-              placeholder="ค้นหาชื่อ, รหัส, หมวดหมู่..."
+              placeholder={t("searchPlaceholder")}
               className="input pl-9 w-64 text-xs"
             />
           </div>
@@ -76,22 +79,23 @@ export default function StockTable({ products, departments, search }: StockTable
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-slate-50 text-left text-xs text-slate-500 uppercase tracking-wide">
-                <th className="px-5 py-3 font-medium">รูป</th>
-                <th className="px-4 py-3 font-medium">รหัส</th>
-                <th className="px-4 py-3 font-medium">ชื่อสินค้า</th>
-                <th className="px-4 py-3 font-medium">หมวดหมู่</th>
-                <th className="px-4 py-3 font-medium">ที่เก็บ</th>
-                <th className="px-4 py-3 font-medium text-right">ราคาต่อหน่วย</th>
-                <th className="px-4 py-3 font-medium text-center">จำนวน/หน่วย</th>
-                <th className="px-4 py-3 font-medium text-center">สถานะ</th>
-                <th className="px-5 py-3 font-medium text-right">การดำเนินการ</th>
+                <th className="px-5 py-3 font-medium">{t("colImage")}</th>
+                <th className="px-4 py-3 font-medium">{t("colCode")}</th>
+                <th className="px-4 py-3 font-medium">{t("colLotNo")}</th>
+                <th className="px-4 py-3 font-medium">{t("colName")}</th>
+                <th className="px-4 py-3 font-medium">{t("colCategory")}</th>
+                <th className="px-4 py-3 font-medium">{t("colLocation")}</th>
+                <th className="px-4 py-3 font-medium text-right">{t("colUnitPrice")}</th>
+                <th className="px-4 py-3 font-medium text-center">{t("colQtyUnit")}</th>
+                <th className="px-4 py-3 font-medium text-center">{t("colStatus")}</th>
+                <th className="px-5 py-3 font-medium text-right">{t("colActions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {products.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-slate-400 text-sm">
-                    ไม่พบสินค้า
+                  <td colSpan={10} className="py-12 text-center text-slate-400 text-sm">
+                    {t("empty")}
                   </td>
                 </tr>
               )}
@@ -118,6 +122,7 @@ export default function StockTable({ products, departments, search }: StockTable
                       )}
                     </td>
                     <td className="px-4 py-3.5 font-mono text-xs text-slate-500">{p.code}</td>
+                    <td className="px-4 py-3.5 font-mono text-xs text-slate-500">{p.lotNo ?? "—"}</td>
                     <td className="px-4 py-3.5 font-medium text-slate-800">{p.name}</td>
                     <td className="px-4 py-3.5 text-slate-500">{p.category.name}</td>
                     <td className="px-4 py-3.5 text-slate-500 text-xs">{p.location ?? "—"}</td>
@@ -133,7 +138,7 @@ export default function StockTable({ products, departments, search }: StockTable
                       >
                         {p.totalStock}
                       </span>
-                      <span className="text-xs text-slate-400 ml-1">{p.unit ?? "ชิ้น"}</span>
+                      <span className="text-xs text-slate-400 ml-1">{p.unit ?? tc("unit")}</span>
                     </td>
                     <td className="px-4 py-3.5 text-center">
                       <span
@@ -142,7 +147,7 @@ export default function StockTable({ products, departments, search }: StockTable
                           isZero ? "badge-low" : isLow ? "badge-warn" : "badge-ok"
                         )}
                       >
-                        {isZero ? "หมด" : isLow ? "ใกล้หมด" : "ปกติ"}
+                        {isZero ? t("statusOut") : isLow ? t("statusLow") : t("statusOk")}
                       </span>
                     </td>
                     <td className="px-5 py-3.5">
@@ -150,10 +155,10 @@ export default function StockTable({ products, departments, search }: StockTable
                         <Link
                           href={`/products/${p.id}/edit`}
                           className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all"
-                          title="แก้ไข"
+                          title={t("edit")}
                         >
                           <Pencil size={14} />
-                          แก้ไข
+                          {t("edit")}
                         </Link>
                         <button
                           onClick={() => openModal("OUT", p)}
@@ -164,18 +169,18 @@ export default function StockTable({ products, departments, search }: StockTable
                               ? "text-slate-300 cursor-not-allowed"
                               : "text-red-600 hover:bg-red-50 hover:text-red-700"
                           )}
-                          title="เบิกออก"
+                          title={t("withdrawTitle")}
                         >
                           <ArrowUpCircle size={14} />
-                          เบิก
+                          {t("withdraw")}
                         </button>
                         <button
                           onClick={() => openModal("IN", p)}
                           className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-green-600 hover:bg-green-50 hover:text-green-700 transition-all"
-                          title="นำเข้า"
+                          title={t("importTitle")}
                         >
                           <ArrowDownCircle size={14} />
-                          นำเข้า
+                          {t("import")}
                         </button>
                       </div>
                     </td>
@@ -187,7 +192,7 @@ export default function StockTable({ products, departments, search }: StockTable
         </div>
 
         <div className="px-5 py-3 border-t border-slate-100 text-xs text-slate-400">
-          แสดง {products.length} รายการ
+          {t("showingCount", { count: products.length })}
         </div>
       </div>
 

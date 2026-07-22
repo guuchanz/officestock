@@ -1,8 +1,14 @@
 "use server";
 
+import { getLocale } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 
 const TOP_PRODUCTS_LIMIT = 5;
+
+async function dateLocale(): Promise<string> {
+  const locale = await getLocale();
+  return locale === "en" ? "en-US" : "th-TH";
+}
 
 export interface ChartSeries {
   key:   string;
@@ -21,6 +27,7 @@ export interface MonthChartData {
 }
 
 export async function getChartData(): Promise<MonthChartData[]> {
+  const locale = await dateLocale();
   const transactions = await prisma.stockTransaction.findMany({
     select: {
       type:       true,
@@ -43,7 +50,7 @@ export async function getChartData(): Promise<MonthChartData[]> {
   for (const [key, txs] of byMonth) {
     const [year, monthNum] = key.split("-").map(Number);
     const daysInMonth = new Date(year, monthNum, 0).getDate();
-    const label = new Date(year, monthNum - 1, 1).toLocaleDateString("th-TH", { month: "long", year: "numeric" });
+    const label = new Date(year, monthNum - 1, 1).toLocaleDateString(locale, { month: "long", year: "numeric" });
 
     const deptMap = new Map<number, { name: string; data: number[] }>();
     const productMap = new Map<number, { code: string; name: string; total: number; data: number[] }>();
@@ -103,6 +110,7 @@ export interface MonthlyCostSummary {
 }
 
 export async function getMonthlyCostReport(): Promise<MonthlyCostSummary[]> {
+  const locale = await dateLocale();
   const transactions = await prisma.stockTransaction.findMany({
     select: {
       type:      true,
@@ -122,7 +130,7 @@ export async function getMonthlyCostReport(): Promise<MonthlyCostSummary[]> {
     if (!summaries.has(key)) {
       summaries.set(key, {
         month:     key,
-        label:     new Date(year, month, 1).toLocaleDateString("th-TH", { month: "long", year: "numeric" }),
+        label:     new Date(year, month, 1).toLocaleDateString(locale, { month: "long", year: "numeric" }),
         inQty:     0,
         outQty:    0,
         inCost:    0,
@@ -148,6 +156,62 @@ export async function getMonthlyCostReport(): Promise<MonthlyCostSummary[]> {
   return Array.from(summaries.values()).sort((a, b) => b.month.localeCompare(a.month));
 }
 
+export interface YearlyCostSummary {
+  year:      string;
+  label:     string;
+  inQty:     number;
+  outQty:    number;
+  inCost:    number;
+  outCost:   number;
+  totalCost: number;
+}
+
+export async function getYearlyCostReport(): Promise<YearlyCostSummary[]> {
+  const locale = await dateLocale();
+  const transactions = await prisma.stockTransaction.findMany({
+    select: {
+      type:      true,
+      quantity:  true,
+      createdAt: true,
+      product:   { select: { unitPrice: true } },
+    },
+  });
+
+  const summaries = new Map<string, YearlyCostSummary>();
+
+  for (const tx of transactions) {
+    const year = tx.createdAt.getFullYear();
+    const key  = String(year);
+
+    if (!summaries.has(key)) {
+      summaries.set(key, {
+        year:      key,
+        label:     new Date(year, 0, 1).toLocaleDateString(locale, { year: "numeric" }),
+        inQty:     0,
+        outQty:    0,
+        inCost:    0,
+        outCost:   0,
+        totalCost: 0,
+      });
+    }
+
+    const entry = summaries.get(key)!;
+    const unitPrice = tx.product.unitPrice ? Number(tx.product.unitPrice) : 0;
+    const cost = unitPrice * tx.quantity;
+
+    if (tx.type === "IN") {
+      entry.inQty  += tx.quantity;
+      entry.inCost += cost;
+    } else {
+      entry.outQty  += tx.quantity;
+      entry.outCost += cost;
+    }
+    entry.totalCost = entry.inCost + entry.outCost;
+  }
+
+  return Array.from(summaries.values()).sort((a, b) => b.year.localeCompare(a.year));
+}
+
 export interface TransactionDetailRow {
   id:          number;
   createdAt:   Date;
@@ -168,13 +232,11 @@ function isValidMonth(month: string): boolean {
   return /^\d{4}-(0[1-9]|1[0-2])$/.test(month);
 }
 
-export async function getMonthTransactionDetails(month: string): Promise<TransactionDetailRow[]> {
-  if (!isValidMonth(month)) return [];
+function isValidYear(year: string): boolean {
+  return /^\d{4}$/.test(year);
+}
 
-  const [year, monthNum] = month.split("-").map(Number);
-  const start = new Date(year, monthNum - 1, 1);
-  const end   = new Date(year, monthNum, 1);
-
+async function queryTransactionDetails(start: Date, end: Date): Promise<TransactionDetailRow[]> {
   const transactions = await prisma.stockTransaction.findMany({
     where:   { createdAt: { gte: start, lt: end } },
     orderBy: { createdAt: "asc" },
@@ -202,4 +264,18 @@ export async function getMonthTransactionDetails(month: string): Promise<Transac
       operator:    tx.operator.name ?? tx.operator.email,
     };
   });
+}
+
+export async function getMonthTransactionDetails(month: string): Promise<TransactionDetailRow[]> {
+  if (!isValidMonth(month)) return [];
+
+  const [year, monthNum] = month.split("-").map(Number);
+  return queryTransactionDetails(new Date(year, monthNum - 1, 1), new Date(year, monthNum, 1));
+}
+
+export async function getYearTransactionDetails(year: string): Promise<TransactionDetailRow[]> {
+  if (!isValidYear(year)) return [];
+
+  const yearNum = Number(year);
+  return queryTransactionDetails(new Date(yearNum, 0, 1), new Date(yearNum + 1, 0, 1));
 }

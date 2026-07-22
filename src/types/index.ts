@@ -5,6 +5,7 @@ export type { TxType, Role };
 export interface ProductWithCategory {
   id:         number;
   code:       string;
+  lotNo:      string | null;
   name:       string;
   totalStock: number;
   minStock:   number;

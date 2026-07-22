@@ -2,9 +2,10 @@ import { getCategories } from "@/actions/product.actions";
 import ProductForm from "@/components/products/ProductForm";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 export default async function NewProductPage() {
-  const categories = await getCategories();
+  const [categories, t] = await Promise.all([getCategories(), getTranslations("Products")]);
 
   return (
     <div className="max-w-xl space-y-5">
@@ -13,8 +14,8 @@ export default async function NewProductPage() {
           <ArrowLeft size={16} />
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-slate-900">เพิ่มสินค้าใหม่</h1>
-          <p className="text-sm text-slate-500">กรอกข้อมูลสินค้าที่ต้องการเพิ่มเข้าระบบ</p>
+          <h1 className="text-xl font-bold text-slate-900">{t("addNew")}</h1>
+          <p className="text-sm text-slate-500">{t("addNewSubtitle")}</p>
         </div>
       </div>
 

@@ -23,12 +23,14 @@
     "@radix-ui/react-select": "^2.1.2",
     "@radix-ui/react-toast": "^1.2.2",
     "@radix-ui/react-tooltip": "^1.1.4",
+    "bcrypt": "^6.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "exceljs": "^4.4.0",
     "lucide-react": "^0.460.0",
     "next": "15.0.3",
     "next-auth": "^5.0.0-beta.22",
+    "next-intl": "^4.13.3",
     "pdfkit": "^0.19.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -37,6 +39,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
     "@types/node": "^20",
     "@types/pdfkit": "^0.17.6",
     "@types/react": "^18",

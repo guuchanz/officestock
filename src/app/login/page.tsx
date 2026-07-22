@@ -1,6 +1,7 @@
 import { signIn } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { getTranslations } from "next-intl/server";
 
 export default async function LoginPage({
   searchParams,
@@ -12,6 +13,7 @@ export default async function LoginPage({
 
   const params = await searchParams;
   const error = params.error;
+  const t = await getTranslations("Login");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#1e3a5f] via-blue-700 to-blue-500 flex items-center justify-center p-4">
@@ -21,13 +23,13 @@ export default async function LoginPage({
             📦
           </div>
           <h1 className="text-2xl font-bold text-slate-900">Office Stock</h1>
-          <p className="text-slate-500 text-sm mt-1">ระบบจัดการสต็อกอุปกรณ์สำนักงาน</p>
+          <p className="text-slate-500 text-sm mt-1">{t("subtitle")}</p>
         </div>
 
         {/* Error Message */}
         {error && (
           <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-            ❌ อีเมลหรือรหัสผ่านไม่ถูกต้อง
+            ❌ {t("invalidCredentials")}
           </div>
         )}
 
@@ -49,7 +51,7 @@ export default async function LoginPage({
           className="space-y-4"
         >
           <div>
-            <label className="label" htmlFor="email">อีเมล</label>
+            <label className="label" htmlFor="email">{t("emailLabel")}</label>
             <input
               id="email" name="email" type="email"
               placeholder="admin@company.com"
@@ -58,7 +60,7 @@ export default async function LoginPage({
             />
           </div>
           <div>
-            <label className="label" htmlFor="password">รหัสผ่าน</label>
+            <label className="label" htmlFor="password">{t("passwordLabel")}</label>
             <input
               id="password" name="password" type="password"
               placeholder="••••••••"
@@ -67,7 +69,7 @@ export default async function LoginPage({
             />
           </div>
           <button type="submit" className="btn-primary w-full justify-center py-2.5">
-            เข้าสู่ระบบ
+            {t("submit")}
           </button>
         </form>
 

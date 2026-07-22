@@ -1,4 +1,4 @@
-// File: D:\myDevelopment\2IT Management System\office-stock-app\office-stock-app\src\app\(dashboard)\products\page.tsx
+// File: /home/channarong/ctcProject/nextProject/officestock/officestock/src/app/(dashboard)/products/page.tsx
 import * as entry from '../../../../../src/app/(dashboard)/products/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

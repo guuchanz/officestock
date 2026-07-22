@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 
 export interface LineChartSeries {
   key:   string;
@@ -14,11 +15,13 @@ interface LineChartProps {
   xLabels:       string[];
   yFormatter?:   (v: number) => string;
   emptyMessage?: string;
+  xAxisLabel?:   string;
+  yAxisLabel?:   string;
 }
 
 const VIEW_W = 720;
 const VIEW_H = 280;
-const MARGIN = { top: 16, right: 12, bottom: 30, left: 40 };
+const MARGIN = { top: 16, right: 12, bottom: 42, left: 48 };
 const PLOT_W = VIEW_W - MARGIN.left - MARGIN.right;
 const PLOT_H = VIEW_H - MARGIN.top - MARGIN.bottom;
 
@@ -75,18 +78,40 @@ function smoothPath(points: { x: number; y: number }[]): string {
 
 const defaultYFormatter = (v: number) => v.toLocaleString("th-TH");
 
-export default function LineChart({ series, xLabels, yFormatter = defaultYFormatter, emptyMessage }: LineChartProps) {
+export default function LineChart({
+  series,
+  xLabels,
+  yFormatter = defaultYFormatter,
+  emptyMessage,
+  xAxisLabel,
+  yAxisLabel,
+}: LineChartProps) {
+  const t = useTranslations("LineChart");
+  const resolvedXAxisLabel = xAxisLabel ?? t("defaultXAxis");
+  const resolvedYAxisLabel = yAxisLabel ?? t("defaultYAxis");
+  const resolvedEmptyMessage = emptyMessage ?? t("emptyDefault");
   const svgRef = useRef<SVGSVGElement>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number; containerWidth: number } | null>(null);
+  const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(new Set());
+
+  const toggleSeries = (key: string) =>
+    setHiddenKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  const visibleSeries = useMemo(() => series.filter((s) => !hiddenKeys.has(s.key)), [series, hiddenKeys]);
 
   const n = xLabels.length;
 
   const max = useMemo(() => {
     let m = 0;
-    for (const s of series) for (const v of s.data) if (v > m) m = v;
+    for (const s of visibleSeries) for (const v of s.data) if (v > m) m = v;
     return niceMax(m);
-  }, [series]);
+  }, [visibleSeries]);
 
   const xAt = (i: number) => (n <= 1 ? MARGIN.left + PLOT_W / 2 : MARGIN.left + (i / (n - 1)) * PLOT_W);
   const yAt = (v: number) => MARGIN.top + PLOT_H - (v / max) * PLOT_H;
@@ -105,7 +130,7 @@ export default function LineChart({ series, xLabels, yFormatter = defaultYFormat
 
   const paths = useMemo(
     () =>
-      series.map((s) => {
+      visibleSeries.map((s) => {
         const pts = s.data.map((v, i) => ({ x: xAt(i), y: yAt(v) }));
         const line = smoothPath(pts);
         const area = pts.length
@@ -114,7 +139,7 @@ export default function LineChart({ series, xLabels, yFormatter = defaultYFormat
         return { ...s, line, area };
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [series, max, n]
+    [visibleSeries, max, n]
   );
 
   const handlePointerMove = (e: React.PointerEvent<SVGRectElement>) => {
@@ -138,16 +163,18 @@ export default function LineChart({ series, xLabels, yFormatter = defaultYFormat
   if (series.length === 0) {
     return (
       <div className="flex aspect-[18/7] items-center justify-center text-sm text-slate-400">
-        {emptyMessage ?? "ยังไม่มีข้อมูล"}
+        {resolvedEmptyMessage}
       </div>
     );
   }
 
   const hoverRows = hoverIndex === null
     ? []
-    : [...series]
+    : [...visibleSeries]
         .map((s) => ({ ...s, value: s.data[hoverIndex] }))
         .sort((a, b) => b.value - a.value);
+
+  const allHidden = visibleSeries.length === 0;
 
   return (
     <div className="relative">
@@ -183,6 +210,20 @@ export default function LineChart({ series, xLabels, yFormatter = defaultYFormat
           </g>
         ))}
 
+        {/* Y-axis title */}
+        <text
+          x={0}
+          y={0}
+          transform={`translate(${12}, ${MARGIN.top + PLOT_H / 2}) rotate(-90)`}
+          textAnchor="middle"
+          className="fill-slate-400"
+          fontSize={9.5}
+          fontWeight={600}
+          letterSpacing={0.3}
+        >
+          {resolvedYAxisLabel}
+        </text>
+
         {/* X-axis labels */}
         {tickIndices.map((i) => (
           <text
@@ -196,6 +237,19 @@ export default function LineChart({ series, xLabels, yFormatter = defaultYFormat
             {xLabels[i]}
           </text>
         ))}
+
+        {/* X-axis title */}
+        <text
+          x={MARGIN.left + PLOT_W / 2}
+          y={VIEW_H - 6}
+          textAnchor="middle"
+          className="fill-slate-400"
+          fontSize={9.5}
+          fontWeight={600}
+          letterSpacing={0.3}
+        >
+          {resolvedXAxisLabel}
+        </text>
 
         {/* Area fills (under the lines) */}
         {paths.map((s, i) => (
@@ -241,7 +295,7 @@ export default function LineChart({ series, xLabels, yFormatter = defaultYFormat
         ))}
 
         {/* End markers + hover markers */}
-        {series.map((s) => {
+        {paths.map((s) => {
           const lastIdx = s.data.length - 1;
           return (
             <g key={s.key}>
@@ -263,11 +317,17 @@ export default function LineChart({ series, xLabels, yFormatter = defaultYFormat
           width={PLOT_W}
           height={PLOT_H}
           fill="transparent"
-          onPointerMove={handlePointerMove}
+          onPointerMove={allHidden ? undefined : handlePointerMove}
         />
       </svg>
 
-      {hoverIndex !== null && tooltipPos && (
+      {allHidden && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center pb-8 text-xs text-slate-400">
+          {t("allHidden")}
+        </div>
+      )}
+
+      {!allHidden && hoverIndex !== null && tooltipPos && (
         <div
           className="pointer-events-none absolute z-10 rounded-xl border border-slate-200/70 bg-white/95 backdrop-blur-sm px-3.5 py-2.5 shadow-lg ring-1 ring-black/5 text-xs min-w-[150px]"
           style={{
@@ -276,7 +336,7 @@ export default function LineChart({ series, xLabels, yFormatter = defaultYFormat
             transform: tooltipPos.x > tooltipPos.containerWidth * 0.6 ? "translateX(-100%)" : undefined,
           }}
         >
-          <p className="font-semibold text-slate-700 mb-1.5">วันที่ {xLabels[hoverIndex]}</p>
+          <p className="font-semibold text-slate-700 mb-1.5">{t("tooltipDatePrefix")} {xLabels[hoverIndex]}</p>
           <div className="space-y-1.5">
             {hoverRows.map((r) => (
               <div key={r.key} className="flex items-center gap-2">
@@ -289,17 +349,32 @@ export default function LineChart({ series, xLabels, yFormatter = defaultYFormat
         </div>
       )}
 
-      {/* Legend */}
+      {/* Legend — click a label to hide/show its line */}
       <div className="mt-3 flex flex-wrap gap-2">
-        {series.map((s) => (
-          <div
-            key={s.key}
-            className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50/70 px-2.5 py-1 text-xs text-slate-600"
-          >
-            <span className="inline-block h-[3px] w-3.5 rounded-full" style={{ backgroundColor: s.color }} />
-            {s.label}
-          </div>
-        ))}
+        {series.map((s) => {
+          const isHidden = hiddenKeys.has(s.key);
+          return (
+            <button
+              key={s.key}
+              type="button"
+              onClick={() => toggleSeries(s.key)}
+              aria-pressed={!isHidden}
+              title={isHidden ? t("showSeries", { label: s.label }) : t("hideSeries", { label: s.label })}
+              className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 ${
+                isHidden
+                  ? "border-slate-200 bg-transparent text-slate-400 opacity-60 hover:opacity-90"
+                  : "border-slate-200 bg-slate-50/70 text-slate-600 hover:border-slate-300"
+              }`}
+              style={{ ["--tw-ring-color" as string]: s.color }}
+            >
+              <span
+                className="inline-block h-[3px] w-3.5 rounded-full"
+                style={{ backgroundColor: isHidden ? "#cbd5e1" : s.color }}
+              />
+              <span className={isHidden ? "line-through decoration-slate-300" : undefined}>{s.label}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

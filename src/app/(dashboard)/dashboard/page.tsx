@@ -4,6 +4,7 @@ import { getDepartments } from "@/actions/department.actions";
 import MetricCard from "@/components/dashboard/MetricCard";
 import StockTable from "@/components/dashboard/StockTable";
 import { Package, AlertTriangle, TrendingDown, TrendingUp } from "lucide-react";
+import { getLocale, getTranslations } from "next-intl/server";
 
 export const revalidate = 0;
 
@@ -15,44 +16,46 @@ export default async function DashboardPage({
   const params = await searchParams;
   const search = params.q;
 
-  const [stats, products, departments] = await Promise.all([
+  const [stats, products, departments, t, locale] = await Promise.all([
     getDashboardStats(),
     getProducts(search),
     getDepartments(),
+    getTranslations("Dashboard"),
+    getLocale(),
   ]);
 
   return (
     <div className="space-y-6">
       {/* Page Title */}
       <div>
-        <h1 className="text-xl font-bold text-slate-900">ภาพรวมสต็อก</h1>
+        <h1 className="text-xl font-bold text-slate-900">{t("title")}</h1>
         <p className="text-sm text-slate-500 mt-0.5">
-          {new Date().toLocaleDateString("th-TH", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+          {new Date().toLocaleDateString(locale === "en" ? "en-US" : "th-TH", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
         </p>
       </div>
 
       {/* Metric Cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <MetricCard
-          label="สินค้าทั้งหมด"
+          label={t("totalProducts")}
           value={stats.totalProducts}
           icon={<Package size={20} />}
           color="indigo"
         />
         <MetricCard
-          label="สต็อกใกล้หมด"
+          label={t("lowStock")}
           value={stats.lowStockProducts}
           icon={<AlertTriangle size={20} />}
           color="rose"
         />
         <MetricCard
-          label="นำเข้าวันนี้"
+          label={t("importedToday")}
           value={`+${stats.todayIn}`}
           icon={<TrendingUp size={20} />}
           color="emerald"
         />
         <MetricCard
-          label="เบิกออกวันนี้"
+          label={t("withdrawnToday")}
           value={`-${stats.todayOut}`}
           icon={<TrendingDown size={20} />}
           color="amber"

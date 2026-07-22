@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Building2, TrendingDown } from "lucide-react";
 import LineChart from "./LineChart";
 import { CATEGORICAL_PALETTE } from "@/lib/chart-colors";
@@ -9,11 +10,12 @@ import type { MonthChartData } from "@/actions/report.actions";
 interface MonthlyChartsSectionProps {
   data:           MonthChartData[];
   allDepartments: { id: number; name: string }[];
+  month:          string;
 }
 
-export default function MonthlyChartsSection({ data, allDepartments }: MonthlyChartsSectionProps) {
-  const [month, setMonth] = useState(data[0]?.month ?? "");
-
+export default function MonthlyChartsSection({ data, allDepartments, month }: MonthlyChartsSectionProps) {
+  const t      = useTranslations("MonthlyCharts");
+  const locale = useLocale();
   const current = useMemo(() => data.find((d) => d.month === month) ?? null, [data, month]);
 
   const departmentColor = useMemo(() => {
@@ -48,19 +50,15 @@ export default function MonthlyChartsSection({ data, allDepartments }: MonthlyCh
 
   if (data.length === 0) {
     return (
-      <div className="card p-6 text-center text-sm text-slate-400">ยังไม่มีข้อมูลรายการสำหรับแสดงกราฟ</div>
+      <div className="card p-6 text-center text-sm text-slate-400">{t("noChartData")}</div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h2 className="font-semibold text-slate-800">แนวโน้มรายวัน</h2>
-        <select value={month} onChange={(e) => setMonth(e.target.value)} className="input w-full sm:w-48">
-          {data.map((d) => (
-            <option key={d.month} value={d.month}>{d.label}</option>
-          ))}
-        </select>
+      <div className="flex items-center gap-2">
+        <h2 className="font-semibold text-slate-800">{t("trendTitle")}</h2>
+        {current && <span className="text-xs text-slate-400">· {current.label}</span>}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -71,19 +69,25 @@ export default function MonthlyChartsSection({ data, allDepartments }: MonthlyCh
                 <Building2 size={17} />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-slate-800">รายการตามแผนกต่อวัน</h3>
-                <p className="text-xs text-slate-400">แยกตามแผนกที่ระบุ</p>
+                <h3 className="text-sm font-semibold text-slate-800">{t("byDepartmentTitle")}</h3>
+                <p className="text-xs text-slate-400">{t("byDepartmentSubtitle")}</p>
               </div>
             </div>
             <div className="text-right">
               <p className="text-xl font-bold text-slate-800 tabular-nums leading-tight">
-                {(current?.totalDepartmentTx ?? 0).toLocaleString("th-TH")}
+                {(current?.totalDepartmentTx ?? 0).toLocaleString(locale === "en" ? "en-US" : "th-TH")}
               </p>
-              <p className="text-[11px] text-slate-400">รายการ</p>
+              <p className="text-[11px] text-slate-400">{t("transactionUnit")}</p>
             </div>
           </div>
           <div className="mt-4">
-            <LineChart series={departmentSeries} xLabels={xLabels} emptyMessage="ยังไม่มีรายการที่ระบุแผนกในเดือนนี้" />
+            <LineChart
+              series={departmentSeries}
+              xLabels={xLabels}
+              xAxisLabel={t("xAxisDay")}
+              yAxisLabel={t("transactionUnit")}
+              emptyMessage={t("noDepartmentData")}
+            />
           </div>
         </div>
 
@@ -94,19 +98,25 @@ export default function MonthlyChartsSection({ data, allDepartments }: MonthlyCh
                 <TrendingDown size={17} />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-slate-800">สินค้าเบิกออกมากที่สุด</h3>
-                <p className="text-xs text-slate-400">5 อันดับสินค้า</p>
+                <h3 className="text-sm font-semibold text-slate-800">{t("topWithdrawnTitle")}</h3>
+                <p className="text-xs text-slate-400">{t("topWithdrawnSubtitle")}</p>
               </div>
             </div>
             <div className="text-right">
               <p className="text-xl font-bold text-slate-800 tabular-nums leading-tight">
-                {(current?.totalOutQty ?? 0).toLocaleString("th-TH")}
+                {(current?.totalOutQty ?? 0).toLocaleString(locale === "en" ? "en-US" : "th-TH")}
               </p>
-              <p className="text-[11px] text-slate-400">ชิ้น</p>
+              <p className="text-[11px] text-slate-400">{t("pieceUnit")}</p>
             </div>
           </div>
           <div className="mt-4">
-            <LineChart series={productSeries} xLabels={xLabels} emptyMessage="ยังไม่มีรายการเบิกออกในเดือนนี้" />
+            <LineChart
+              series={productSeries}
+              xLabels={xLabels}
+              xAxisLabel={t("xAxisDay")}
+              yAxisLabel={t("pieceUnit")}
+              emptyMessage={t("noWithdrawData")}
+            />
           </div>
         </div>
       </div>

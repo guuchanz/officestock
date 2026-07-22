@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Search, X, FileSpreadsheet } from "lucide-react";
 
 interface TransactionFiltersProps {
@@ -11,6 +12,7 @@ interface TransactionFiltersProps {
 }
 
 export default function TransactionFilters({ q, from, to }: TransactionFiltersProps) {
+  const t          = useTranslations("TransactionFilters");
   const router     = useRouter();
   const pathname   = usePathname();
   const [, startT] = useTransition();
@@ -67,7 +69,7 @@ export default function TransactionFilters({ q, from, to }: TransactionFiltersPr
         <input
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
-          placeholder="ค้นหาสินค้า, เหตุผล, ผู้รับ, หมายเหตุ, ผู้ทำรายการ..."
+          placeholder={t("searchPlaceholder")}
           className="input pl-9 w-full text-xs"
         />
       </div>
@@ -80,7 +82,7 @@ export default function TransactionFilters({ q, from, to }: TransactionFiltersPr
           max={dateTo || undefined}
           className="input text-xs"
         />
-        <span className="text-xs text-slate-400">ถึง</span>
+        <span className="text-xs text-slate-400">{t("to")}</span>
         <input
           type="date"
           value={dateTo}
@@ -96,7 +98,7 @@ export default function TransactionFilters({ q, from, to }: TransactionFiltersPr
           className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
         >
           <X size={13} />
-          ล้างตัวกรอง
+          {t("clearFilters")}
         </button>
       )}
 
@@ -105,7 +107,7 @@ export default function TransactionFilters({ q, from, to }: TransactionFiltersPr
         className="flex items-center gap-1.5 rounded-lg bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700 hover:bg-green-100 transition-colors"
       >
         <FileSpreadsheet size={14} />
-        Export Excel
+        {t("exportExcel")}
       </a>
     </div>
   );

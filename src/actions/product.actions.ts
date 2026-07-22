@@ -5,26 +5,34 @@ import { z } from "zod";
 import { randomUUID } from "crypto";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
-const productSchema = z.object({
-  code:        z.string().min(1, "รหัสสินค้าจำเป็น"),
-  name:        z.string().min(1, "ชื่อสินค้าจำเป็น"),
-  description: z.string().optional(),
-  categoryId:  z.number().int().positive("กรุณาเลือกหมวดหมู่"),
-  minStock:    z.number().int().min(0).default(5),
-  location:    z.string().optional(),
-  unit:        z.string().optional(),
-  unitPrice:   z.number().min(0).optional(),
-});
+async function buildProductSchema() {
+  const t = await getTranslations("ProductActions");
+  return z.object({
+    code:        z.string().min(1, t("codeRequired")),
+    lotNo:       z.string().optional(),
+    name:        z.string().min(1, t("nameRequired")),
+    description: z.string().optional(),
+    categoryId:  z.number().int().positive(t("categoryRequired")),
+    minStock:    z.number().int().min(0).default(5),
+    location:    z.string().optional(),
+    unit:        z.string().optional(),
+    unitPrice:   z.number().min(0).optional(),
+  });
+}
 
 const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+
+class ImageTypeError extends Error {}
 
 async function saveProductImage(file: File): Promise<string | undefined> {
   if (!file || file.size === 0) return undefined;
   if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-    throw new Error("รองรับเฉพาะไฟล์รูปภาพ (png, jpg, webp, gif)");
+    const t = await getTranslations("ProductActions");
+    throw new ImageTypeError(t("imageTypeError"));
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -47,12 +55,14 @@ export async function createProductAction(
   formData: FormData
 ): Promise<ProductActionState> {
   const session = await auth();
-  if (!session?.user) return { success: false, message: "กรุณาเข้าสู่ระบบก่อน" };
+  const t = await getTranslations("ProductActions");
+  if (!session?.user) return { success: false, message: t("loginRequired") };
 
   const unitPriceRaw = formData.get("unitPrice") as string;
 
   const raw = {
     code:        formData.get("code") as string,
+    lotNo:       (formData.get("lotNo") as string) || undefined,
     name:        formData.get("name") as string,
     description: (formData.get("description") as string) || undefined,
     categoryId:  Number(formData.get("categoryId")),
@@ -62,9 +72,10 @@ export async function createProductAction(
     unitPrice:   unitPriceRaw ? Number(unitPriceRaw) : undefined,
   };
 
+  const productSchema = await buildProductSchema();
   const parsed = productSchema.safeParse(raw);
   if (!parsed.success) {
-    return { success: false, message: "ข้อมูลไม่ถูกต้อง", errors: parsed.error.flatten().fieldErrors };
+    return { success: false, message: t("invalidData"), errors: parsed.error.flatten().fieldErrors };
   }
 
   try {
@@ -73,11 +84,11 @@ export async function createProductAction(
 
     await prisma.product.create({ data: { ...parsed.data, image } });
     revalidatePath("/dashboard");
-    return { success: true, message: "เพิ่มสินค้าสำเร็จ" };
+    return { success: true, message: t("createSuccess") };
   } catch (e: any) {
-    if (e.code === "P2002") return { success: false, message: "รหัสสินค้านี้มีอยู่แล้ว" };
-    if (e instanceof Error && e.message.includes("รูปภาพ")) return { success: false, message: e.message };
-    return { success: false, message: "เกิดข้อผิดพลาด" };
+    if (e.code === "P2002") return { success: false, message: t("duplicateCode") };
+    if (e instanceof ImageTypeError) return { success: false, message: e.message };
+    return { success: false, message: t("genericError") };
   }
 }
 
@@ -86,15 +97,17 @@ export async function updateProductAction(
   formData: FormData
 ): Promise<ProductActionState> {
   const session = await auth();
-  if (!session?.user) return { success: false, message: "กรุณาเข้าสู่ระบบก่อน" };
+  const t = await getTranslations("ProductActions");
+  if (!session?.user) return { success: false, message: t("loginRequired") };
 
   const id = Number(formData.get("id"));
-  if (!id) return { success: false, message: "ไม่พบสินค้า" };
+  if (!id) return { success: false, message: t("notFound") };
 
   const unitPriceRaw = formData.get("unitPrice") as string;
 
   const raw = {
     code:        formData.get("code") as string,
+    lotNo:       (formData.get("lotNo") as string) || undefined,
     name:        formData.get("name") as string,
     description: (formData.get("description") as string) || undefined,
     categoryId:  Number(formData.get("categoryId")),
@@ -104,9 +117,10 @@ export async function updateProductAction(
     unitPrice:   unitPriceRaw ? Number(unitPriceRaw) : undefined,
   };
 
+  const productSchema = await buildProductSchema();
   const parsed = productSchema.safeParse(raw);
   if (!parsed.success) {
-    return { success: false, message: "ข้อมูลไม่ถูกต้อง", errors: parsed.error.flatten().fieldErrors };
+    return { success: false, message: t("invalidData"), errors: parsed.error.flatten().fieldErrors };
   }
 
   try {
@@ -119,12 +133,12 @@ export async function updateProductAction(
     });
     revalidatePath("/dashboard");
     revalidatePath("/products");
-    return { success: true, message: "แก้ไขสินค้าสำเร็จ" };
+    return { success: true, message: t("updateSuccess") };
   } catch (e: any) {
-    if (e.code === "P2002") return { success: false, message: "รหัสสินค้านี้มีอยู่แล้ว" };
-    if (e.code === "P2025") return { success: false, message: "ไม่พบสินค้า" };
-    if (e instanceof Error && e.message.includes("รูปภาพ")) return { success: false, message: e.message };
-    return { success: false, message: "เกิดข้อผิดพลาด" };
+    if (e.code === "P2002") return { success: false, message: t("duplicateCode") };
+    if (e.code === "P2025") return { success: false, message: t("notFound") };
+    if (e instanceof ImageTypeError) return { success: false, message: e.message };
+    return { success: false, message: t("genericError") };
   }
 }
 
@@ -145,6 +159,7 @@ export async function getProducts(search?: string) {
           OR: [
             { name: { contains: search } },
             { code: { contains: search } },
+            { lotNo: { contains: search } },
             { category: { name: { contains: search } } },
           ],
         }

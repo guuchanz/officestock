@@ -1,8 +1,8 @@
-import { getMonthlyCostReport, getChartData } from "@/actions/report.actions";
+import { getMonthlyCostReport, getYearlyCostReport, getChartData } from "@/actions/report.actions";
 import { getDepartments } from "@/actions/department.actions";
-import { ArrowDownCircle, ArrowUpCircle, Wallet, FileSpreadsheet, FileText } from "lucide-react";
-import MetricCard from "@/components/dashboard/MetricCard";
-import MonthlyChartsSection from "@/components/reports/MonthlyChartsSection";
+import { FileSpreadsheet, FileText } from "lucide-react";
+import ReportsOverview from "@/components/reports/ReportsOverview";
+import { getTranslations } from "next-intl/server";
 
 export const revalidate = 0;
 
@@ -11,70 +11,41 @@ function currency(n: number) {
 }
 
 export default async function ReportsPage() {
-  const [months, chartData, departments] = await Promise.all([
+  const [months, years, chartData, departments, t] = await Promise.all([
     getMonthlyCostReport(),
+    getYearlyCostReport(),
     getChartData(),
     getDepartments(),
+    getTranslations("Reports"),
   ]);
-
-  const totalIn    = months.reduce((s, m) => s + m.inCost, 0);
-  const totalOut   = months.reduce((s, m) => s + m.outCost, 0);
-  const totalCost  = totalIn + totalOut;
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-xl font-bold text-slate-900">รายงานต้นทุน</h1>
-        <p className="text-sm text-slate-500 mt-0.5">สรุปมูลค่าการนำเข้า-เบิกออกสินค้ารายเดือน</p>
-      </div>
-
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <MetricCard
-          label="มูลค่านำเข้ารวม"
-          value={currency(totalIn)}
-          icon={<ArrowDownCircle size={20} />}
-          color="emerald"
-        />
-        <MetricCard
-          label="มูลค่าเบิกออกรวม"
-          value={currency(totalOut)}
-          icon={<ArrowUpCircle size={20} />}
-          color="rose"
-        />
-        <MetricCard
-          label="มูลค่ารวมทั้งหมด"
-          value={currency(totalCost)}
-          icon={<Wallet size={20} />}
-          color="indigo"
-        />
-      </div>
-
-      <MonthlyChartsSection data={chartData} allDepartments={departments} />
+      <ReportsOverview months={months} chartData={chartData} allDepartments={departments} />
 
       {/* Monthly table */}
       <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100">
-          <h2 className="font-semibold text-slate-800">สรุปรายเดือน</h2>
+          <h2 className="font-semibold text-slate-800">{t("monthlyTableTitle")}</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-slate-50 text-left text-xs text-slate-500 uppercase tracking-wide">
-                <th className="px-5 py-3 font-medium">เดือน</th>
-                <th className="px-4 py-3 font-medium text-center">จำนวนนำเข้า</th>
-                <th className="px-4 py-3 font-medium text-right">มูลค่านำเข้า</th>
-                <th className="px-4 py-3 font-medium text-center">จำนวนเบิกออก</th>
-                <th className="px-4 py-3 font-medium text-right">มูลค่าเบิกออก</th>
-                <th className="px-5 py-3 font-medium text-right">มูลค่ารวม</th>
-                <th className="px-5 py-3 font-medium text-center">ดาวน์โหลด</th>
+                <th className="px-5 py-3 font-medium">{t("colMonth")}</th>
+                <th className="px-4 py-3 font-medium text-center">{t("colImportQty")}</th>
+                <th className="px-4 py-3 font-medium text-right">{t("colImportValue")}</th>
+                <th className="px-4 py-3 font-medium text-center">{t("colWithdrawQty")}</th>
+                <th className="px-4 py-3 font-medium text-right">{t("colWithdrawValue")}</th>
+                <th className="px-5 py-3 font-medium text-right">{t("colTotalValue")}</th>
+                <th className="px-5 py-3 font-medium text-center">{t("colDownload")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {months.length === 0 && (
                 <tr>
                   <td colSpan={7} className="py-16 text-center text-slate-400">
-                    ยังไม่มีข้อมูลรายการ
+                    {t("emptyData")}
                   </td>
                 </tr>
               )}
@@ -97,7 +68,7 @@ export default async function ReportsPage() {
                       <a
                         href={`/api/reports/${m.month}?format=excel`}
                         className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-green-700 hover:bg-green-50 transition-all"
-                        title="ดาวน์โหลด Excel"
+                        title={t("downloadExcel")}
                       >
                         <FileSpreadsheet size={14} />
                         Excel
@@ -105,7 +76,74 @@ export default async function ReportsPage() {
                       <a
                         href={`/api/reports/${m.month}?format=pdf`}
                         className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 transition-all"
-                        title="ดาวน์โหลด PDF"
+                        title={t("downloadPdf")}
+                      >
+                        <FileText size={14} />
+                        PDF
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Yearly table */}
+      <div className="card overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100">
+          <h2 className="font-semibold text-slate-800">{t("yearlyTableTitle")}</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-slate-50 text-left text-xs text-slate-500 uppercase tracking-wide">
+                <th className="px-5 py-3 font-medium">{t("colYear")}</th>
+                <th className="px-4 py-3 font-medium text-center">{t("colImportQty")}</th>
+                <th className="px-4 py-3 font-medium text-right">{t("colImportValue")}</th>
+                <th className="px-4 py-3 font-medium text-center">{t("colWithdrawQty")}</th>
+                <th className="px-4 py-3 font-medium text-right">{t("colWithdrawValue")}</th>
+                <th className="px-5 py-3 font-medium text-right">{t("colTotalValue")}</th>
+                <th className="px-5 py-3 font-medium text-center">{t("colDownload")}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {years.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-16 text-center text-slate-400">
+                    {t("emptyData")}
+                  </td>
+                </tr>
+              )}
+              {years.map((y) => (
+                <tr key={y.year} className="hover:bg-slate-50/70 transition-colors">
+                  <td className="px-5 py-3.5 font-medium text-slate-800">{y.label}</td>
+                  <td className="px-4 py-3.5 text-center text-green-600 font-semibold tabular-nums">
+                    +{y.inQty}
+                  </td>
+                  <td className="px-4 py-3.5 text-right text-slate-600 tabular-nums">{currency(y.inCost)}</td>
+                  <td className="px-4 py-3.5 text-center text-red-600 font-semibold tabular-nums">
+                    -{y.outQty}
+                  </td>
+                  <td className="px-4 py-3.5 text-right text-slate-600 tabular-nums">{currency(y.outCost)}</td>
+                  <td className="px-5 py-3.5 text-right font-bold text-slate-800 tabular-nums">
+                    {currency(y.totalCost)}
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center justify-center gap-2">
+                      <a
+                        href={`/api/reports/year/${y.year}?format=excel`}
+                        className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-green-700 hover:bg-green-50 transition-all"
+                        title={t("downloadExcel")}
+                      >
+                        <FileSpreadsheet size={14} />
+                        Excel
+                      </a>
+                      <a
+                        href={`/api/reports/year/${y.year}?format=pdf`}
+                        className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 transition-all"
+                        title={t("downloadPdf")}
                       >
                         <FileText size={14} />
                         PDF

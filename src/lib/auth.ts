@@ -1,7 +1,9 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import bcrypt from "bcrypt";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { authConfig } from "./auth.config";
 
 const loginSchema = z.object({
   email:    z.string().email(),
@@ -9,25 +11,7 @@ const loginSchema = z.object({
 });
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  pages: {
-    signIn: "/login",
-  },
-  callbacks: {
-    jwt({ token, user }) {
-      if (user) {
-        token.id   = user.id;
-        token.role = (user as any).role;
-      }
-      return token;
-    },
-    session({ session, token }) {
-      if (session.user) {
-        session.user.id   = token.id as string;
-        (session.user as any).role = token.role;
-      }
-      return session;
-    },
-  },
+  ...authConfig,
   providers: [
     Credentials({
       async authorize(credentials) {
@@ -40,12 +24,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!user || !user.password) return null;
 
-        // Simple password check — replace with bcrypt in production:
-        // const match = await bcrypt.compare(parsed.data.password, user.password);
-        const match = parsed.data.password === user.password;
+        const match = await bcrypt.compare(parsed.data.password, user.password);
         if (!match) return null;
 
-        return { id: user.id, name: user.name, email: user.email, role: user.role };
+        return {
+          id:                user.id,
+          name:              user.name,
+          email:             user.email,
+          role:              user.role,
+          mustResetPassword: user.mustResetPassword,
+        };
       },
     }),
   ],

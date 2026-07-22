@@ -2,12 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
-const departmentSchema = z.object({
-  name: z.string().min(1, "กรุณากรอกชื่อแผนก"),
-});
+async function buildDepartmentSchema() {
+  const t = await getTranslations("DepartmentActions");
+  return z.object({
+    name: z.string().min(1, t("nameRequired")),
+  });
+}
 
 export type DepartmentActionState = {
   success: boolean;
@@ -31,20 +35,22 @@ export async function createDepartmentAction(
   formData: FormData
 ): Promise<DepartmentActionState> {
   const session = await auth();
-  if (!session?.user) return { success: false, message: "กรุณาเข้าสู่ระบบก่อน" };
+  const t = await getTranslations("DepartmentActions");
+  if (!session?.user) return { success: false, message: t("loginRequired") };
 
+  const departmentSchema = await buildDepartmentSchema();
   const parsed = departmentSchema.safeParse({ name: formData.get("name") as string });
   if (!parsed.success) {
-    return { success: false, message: "ข้อมูลไม่ถูกต้อง", errors: parsed.error.flatten().fieldErrors };
+    return { success: false, message: t("invalidData"), errors: parsed.error.flatten().fieldErrors };
   }
 
   try {
     await prisma.department.create({ data: parsed.data });
     revalidatePath("/departments");
-    return { success: true, message: "เพิ่มแผนกสำเร็จ" };
+    return { success: true, message: t("createSuccess") };
   } catch (e: any) {
-    if (e.code === "P2002") return { success: false, message: "มีชื่อแผนกนี้อยู่แล้ว" };
-    return { success: false, message: "เกิดข้อผิดพลาด" };
+    if (e.code === "P2002") return { success: false, message: t("duplicateName") };
+    return { success: false, message: t("genericError") };
   }
 }
 
@@ -53,37 +59,40 @@ export async function updateDepartmentAction(
   formData: FormData
 ): Promise<DepartmentActionState> {
   const session = await auth();
-  if (!session?.user) return { success: false, message: "กรุณาเข้าสู่ระบบก่อน" };
+  const t = await getTranslations("DepartmentActions");
+  if (!session?.user) return { success: false, message: t("loginRequired") };
 
   const id = Number(formData.get("id"));
-  if (!id) return { success: false, message: "ไม่พบแผนก" };
+  if (!id) return { success: false, message: t("notFound") };
 
+  const departmentSchema = await buildDepartmentSchema();
   const parsed = departmentSchema.safeParse({ name: formData.get("name") as string });
   if (!parsed.success) {
-    return { success: false, message: "ข้อมูลไม่ถูกต้อง", errors: parsed.error.flatten().fieldErrors };
+    return { success: false, message: t("invalidData"), errors: parsed.error.flatten().fieldErrors };
   }
 
   try {
     await prisma.department.update({ where: { id }, data: parsed.data });
     revalidatePath("/departments");
-    return { success: true, message: "แก้ไขแผนกสำเร็จ" };
+    return { success: true, message: t("updateSuccess") };
   } catch (e: any) {
-    if (e.code === "P2002") return { success: false, message: "มีชื่อแผนกนี้อยู่แล้ว" };
-    if (e.code === "P2025") return { success: false, message: "ไม่พบแผนก" };
-    return { success: false, message: "เกิดข้อผิดพลาด" };
+    if (e.code === "P2002") return { success: false, message: t("duplicateName") };
+    if (e.code === "P2025") return { success: false, message: t("notFound") };
+    return { success: false, message: t("genericError") };
   }
 }
 
 export async function deleteDepartmentAction(id: number) {
   const session = await auth();
-  if (!session?.user) return { success: false, message: "กรุณาเข้าสู่ระบบก่อน" };
+  const t = await getTranslations("DepartmentActions");
+  if (!session?.user) return { success: false, message: t("loginRequired") };
 
   try {
     await prisma.department.delete({ where: { id } });
     revalidatePath("/departments");
-    return { success: true, message: "ลบแผนกสำเร็จ" };
+    return { success: true, message: t("deleteSuccess") };
   } catch (e: any) {
-    if (e.code === "P2025") return { success: false, message: "ไม่พบแผนก" };
-    return { success: false, message: "เกิดข้อผิดพลาด" };
+    if (e.code === "P2025") return { success: false, message: t("notFound") };
+    return { success: false, message: t("genericError") };
   }
 }

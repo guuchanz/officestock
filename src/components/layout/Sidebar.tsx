@@ -2,20 +2,29 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, History, PackagePlus, Package, FileBarChart, Building2 } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { LayoutDashboard, History, Package, FileBarChart, Building2, Users, FileText, Tags } from "lucide-react";
 import { clsx } from "clsx";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 const nav = [
-  { href: "/dashboard",     label: "ภาพรวม",         icon: LayoutDashboard },
-  { href: "/products",      label: "สินค้าคงคลัง",   icon: Package },
-  { href: "/departments",   label: "แผนก",           icon: Building2 },
-  { href: "/transactions",  label: "ประวัติรายการ",   icon: History },
-  { href: "/reports",       label: "รายงานต้นทุน",   icon: FileBarChart },
-  // { href: "/products/new",  label: "เพิ่มสินค้าใหม่", icon: PackagePlus },
-];
+  { href: "/dashboard",     key: "overview",     icon: LayoutDashboard },
+  { href: "/products",      key: "products",     icon: Package },
+  { href: "/quotations",    key: "quotations",   icon: FileText },
+  { href: "/transactions",  key: "transactions", icon: History },
+  { href: "/reports",       key: "reports",      icon: FileBarChart },
+  { href: "/categories",    key: "categories",   icon: Tags },
+  { href: "/departments",   key: "departments",  icon: Building2 },
+] as const;
 
-export default function Sidebar() {
+interface SidebarProps {
+  canManageUsers: boolean;
+}
+
+export default function Sidebar({ canManageUsers }: SidebarProps) {
   const path = usePathname();
+  const t = useTranslations("Nav");
+  const items = canManageUsers ? [...nav, { href: "/users", key: "users", icon: Users }] : nav;
 
   return (
     <aside className="flex w-60 flex-col bg-[#1e3a5f] text-white shrink-0">
@@ -30,7 +39,7 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 p-3 space-y-1">
-        {nav.map(({ href, label, icon: Icon }) => {
+        {items.map(({ href, key, icon: Icon }) => {
           const active = path === href;
           return (
             <Link
@@ -44,14 +53,15 @@ export default function Sidebar() {
               )}
             >
               <Icon size={17} />
-              {label}
+              {t(key)}
             </Link>
           );
         })}
       </nav>
 
       {/* Footer */}
-      <div className="p-3 border-t border-white/10">
+      <div className="p-3 border-t border-white/10 space-y-3">
+        <LanguageSwitcher />
         <p className="text-[11px] text-blue-300 text-center">v1.0.0 © Office Stock</p>
       </div>
     </aside>

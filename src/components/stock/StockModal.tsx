@@ -3,6 +3,7 @@
 import { useEffect, useActionState, useRef } from "react";
 import { X, Minus, Plus } from "lucide-react";
 import { clsx } from "clsx";
+import { useTranslations } from "next-intl";
 import { stockTransactionAction, type StockActionState } from "@/actions/stock.actions";
 import { REASON_OPTIONS, type ProductWithCategory } from "@/types";
 
@@ -17,6 +18,8 @@ interface StockModalProps {
 const initState: StockActionState = { success: false, message: "" };
 
 export default function StockModal({ open, type, product, departments, onClose }: StockModalProps) {
+  const t  = useTranslations("StockModal");
+  const tc = useTranslations("Common");
   const [state, formAction, pending] = useActionState(stockTransactionAction, initState);
   const qtyRef  = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -67,7 +70,7 @@ export default function StockModal({ open, type, product, departments, onClose }
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className={clsx("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold", badgeClass)}>
-                {isIn ? "▼ นำเข้าสต็อก" : "▲ เบิกออก"}
+                {isIn ? t("titleIn") : t("titleOut")}
               </span>
             </div>
             <h2 className="font-semibold text-slate-800 text-sm">{product.name}</h2>
@@ -80,9 +83,9 @@ export default function StockModal({ open, type, product, departments, onClose }
 
         {/* Current Stock Info */}
         <div className="mx-5 mt-4 rounded-lg bg-slate-50 border border-slate-200 px-4 py-3 flex items-center justify-between">
-          <span className="text-xs text-slate-500">สต็อกปัจจุบัน</span>
+          <span className="text-xs text-slate-500">{t("currentStock")}</span>
           <span className={clsx("text-2xl font-bold", accentClass)}>
-            {product.totalStock} <span className="text-sm font-normal text-slate-400">ชิ้น</span>
+            {product.totalStock} <span className="text-sm font-normal text-slate-400">{tc("unit")}</span>
           </span>
         </div>
 
@@ -93,7 +96,7 @@ export default function StockModal({ open, type, product, departments, onClose }
 
           {/* Quantity */}
           <div>
-            <label className="label">จำนวน{isIn ? "ที่นำเข้า" : "ที่เบิก"}</label>
+            <label className="label">{isIn ? t("qtyLabelIn") : t("qtyLabelOut")}</label>
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -124,9 +127,9 @@ export default function StockModal({ open, type, product, departments, onClose }
 
           {/* Reason */}
           <div>
-            <label className="label">เหตุผล</label>
+            <label className="label">{t("reasonLabel")}</label>
             <select name="reason" required className="input">
-              <option value="">-- เลือกเหตุผล --</option>
+              <option value="">{t("reasonPlaceholder")}</option>
               {REASON_OPTIONS[type].map((r) => (
                 <option key={r} value={r}>{r}</option>
               ))}
@@ -135,9 +138,9 @@ export default function StockModal({ open, type, product, departments, onClose }
 
           {/* Department */}
           <div>
-            <label className="label" htmlFor="departmentId">แผนก</label>
+            <label className="label" htmlFor="departmentId">{t("departmentLabel")}</label>
             <select id="departmentId" name="departmentId" className="input" defaultValue="">
-              <option value="">-- ไม่ระบุ --</option>
+              <option value="">{tc("notSpecifiedPlaceholder")}</option>
               {departments.map((d) => (
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
@@ -147,12 +150,12 @@ export default function StockModal({ open, type, product, departments, onClose }
           {/* Receiver (OUT only) */}
           {!isIn && (
             <div>
-              <label className="label" htmlFor="receiver">ผู้รับ</label>
+              <label className="label" htmlFor="receiver">{t("receiverLabel")}</label>
               <input
                 id="receiver"
                 name="receiver"
                 className="input"
-                placeholder="ชื่อผู้รับสินค้า"
+                placeholder={t("receiverPlaceholder")}
                 required
               />
               {state.errors?.receiver?.[0] && (
@@ -164,12 +167,12 @@ export default function StockModal({ open, type, product, departments, onClose }
           {/* Note */}
           <div>
             <label className="label">
-              หมายเหตุเพิ่มเติม <span className="text-slate-400 font-normal">(ไม่บังคับ)</span>
+              {t("noteLabel")} <span className="text-slate-400 font-normal">{t("noteOptional")}</span>
             </label>
             <textarea
               name="note"
               rows={2}
-              placeholder="ระบุรายละเอียดเพิ่มเติม..."
+              placeholder={t("notePlaceholder")}
               className="input resize-none"
             />
           </div>
@@ -195,7 +198,7 @@ export default function StockModal({ open, type, product, departments, onClose }
               onClick={onClose}
               className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
             >
-              ยกเลิก
+              {tc("cancel")}
             </button>
             <button
               type="submit"
@@ -208,7 +211,7 @@ export default function StockModal({ open, type, product, departments, onClose }
                 pending && "opacity-60 cursor-not-allowed"
               )}
             >
-              {pending ? "กำลังบันทึก..." : isIn ? "บันทึกการนำเข้า" : "บันทึกการเบิก"}
+              {pending ? tc("saving") : isIn ? t("saveIn") : t("saveOut")}
             </button>
           </div>
         </form>

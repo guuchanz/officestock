@@ -3,6 +3,7 @@ import ProductForm from "@/components/products/ProductForm";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 export default async function EditProductPage({
   params,
@@ -13,9 +14,10 @@ export default async function EditProductPage({
   const productId = Number(id);
   if (!productId) notFound();
 
-  const [product, categories] = await Promise.all([
+  const [product, categories, t] = await Promise.all([
     getProductById(productId),
     getCategories(),
+    getTranslations("Products"),
   ]);
 
   if (!product) notFound();
@@ -27,7 +29,7 @@ export default async function EditProductPage({
           <ArrowLeft size={16} />
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-slate-900">แก้ไขสินค้า</h1>
+          <h1 className="text-xl font-bold text-slate-900">{t("editTitle")}</h1>
           <p className="text-sm text-slate-500">{product.name}</p>
         </div>
       </div>

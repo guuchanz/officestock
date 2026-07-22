@@ -2,6 +2,7 @@ import { getTransactions } from "@/actions/product.actions";
 import TransactionFilters from "@/components/transactions/TransactionFilters";
 import { clsx } from "clsx";
 import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { getLocale, getTranslations } from "next-intl/server";
 
 export const revalidate = 0;
 
@@ -13,7 +14,12 @@ export default async function TransactionsPage({
   const params = await searchParams;
   const page = Number(params.page) || 1;
   const { q, from, to } = params;
-  const { items, total, pages } = await getTransactions(page, 25, { q, from, to });
+  const [{ items, total, pages }, t, locale] = await Promise.all([
+    getTransactions(page, 25, { q, from, to }),
+    getTranslations("Transactions"),
+    getLocale(),
+  ]);
+  const dateLocale = locale === "en" ? "en-US" : "th-TH";
 
   const pageHref = (p: number) => {
     const sp = new URLSearchParams();
@@ -27,8 +33,8 @@ export default async function TransactionsPage({
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">ประวัติรายการ</h1>
-        <p className="text-sm text-slate-500 mt-0.5">รายการเข้า-ออกสต็อกทั้งหมด ({total} รายการ)</p>
+        <h1 className="text-xl font-bold text-slate-900">{t("title")}</h1>
+        <p className="text-sm text-slate-500 mt-0.5">{t("subtitle", { count: total })}</p>
       </div>
 
       <div className="card overflow-hidden">
@@ -38,22 +44,22 @@ export default async function TransactionsPage({
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-slate-50 text-left text-xs text-slate-500 uppercase tracking-wide">
-                <th className="px-5 py-3 font-medium">วันที่/เวลา</th>
-                <th className="px-4 py-3 font-medium">ประเภท</th>
-                <th className="px-4 py-3 font-medium">สินค้า</th>
-                <th className="px-4 py-3 font-medium text-center">จำนวน</th>
-                <th className="px-4 py-3 font-medium">เหตุผล</th>
-                <th className="px-4 py-3 font-medium">ผู้รับ</th>
-                <th className="px-4 py-3 font-medium">แผนก</th>
-                <th className="px-4 py-3 font-medium">หมายเหตุ</th>
-                <th className="px-5 py-3 font-medium">ผู้ทำรายการ</th>
+                <th className="px-5 py-3 font-medium">{t("colDateTime")}</th>
+                <th className="px-4 py-3 font-medium">{t("colType")}</th>
+                <th className="px-4 py-3 font-medium">{t("colProduct")}</th>
+                <th className="px-4 py-3 font-medium text-center">{t("colQty")}</th>
+                <th className="px-4 py-3 font-medium">{t("colReason")}</th>
+                <th className="px-4 py-3 font-medium">{t("colReceiver")}</th>
+                <th className="px-4 py-3 font-medium">{t("colDepartment")}</th>
+                <th className="px-4 py-3 font-medium">{t("colNote")}</th>
+                <th className="px-5 py-3 font-medium">{t("colOperator")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {items.length === 0 && (
                 <tr>
                   <td colSpan={9} className="py-16 text-center text-slate-400">
-                    ยังไม่มีประวัติรายการ
+                    {t("empty")}
                   </td>
                 </tr>
               )}
@@ -68,12 +74,12 @@ export default async function TransactionsPage({
                     )}
                   >
                     <td className="px-5 py-3.5 text-xs text-slate-500 whitespace-nowrap">
-                      {new Date(tx.createdAt).toLocaleDateString("th-TH", {
+                      {new Date(tx.createdAt).toLocaleDateString(dateLocale, {
                         day: "2-digit", month: "short", year: "numeric",
                       })}
                       <br />
                       <span className="text-slate-400">
-                        {new Date(tx.createdAt).toLocaleTimeString("th-TH", {
+                        {new Date(tx.createdAt).toLocaleTimeString(dateLocale, {
                           hour: "2-digit", minute: "2-digit",
                         })}
                       </span>
@@ -89,7 +95,7 @@ export default async function TransactionsPage({
                         {isIn
                           ? <ArrowDownCircle size={12} />
                           : <ArrowUpCircle size={12} />}
-                        {isIn ? "นำเข้า" : "เบิกออก"}
+                        {isIn ? t("typeIn") : t("typeOut")}
                       </span>
                     </td>
 
