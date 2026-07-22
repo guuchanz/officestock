@@ -111,6 +111,7 @@ export default function StockTable({ products, departments, search }: StockTable
                           alt={p.name}
                           width={36}
                           height={36}
+                          unoptimized
                           onMouseEnter={(e) => showPreview(e, p.image!, p.name)}
                           onMouseLeave={() => setPreview(null)}
                           className="h-9 w-9 rounded-lg object-cover border border-slate-200 cursor-zoom-in transition-transform hover:scale-105"
@@ -217,6 +218,7 @@ export default function StockTable({ products, departments, search }: StockTable
             alt={preview.alt}
             width={192}
             height={192}
+            unoptimized
             className="h-48 w-48 rounded-lg object-cover"
           />
         </div>

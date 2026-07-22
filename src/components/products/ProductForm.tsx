@@ -123,6 +123,7 @@ export default function ProductForm({ categories, product }: ProductFormProps) {
             alt={product.name}
             width={56}
             height={56}
+            unoptimized
             className="mb-2 h-14 w-14 rounded-lg object-cover border border-slate-200"
           />
         )}

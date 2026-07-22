@@ -2,12 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { randomUUID } from "crypto";
-import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { saveUpload } from "@/lib/uploads";
 
 async function buildProductSchema() {
   const t = await getTranslations("ProductActions");
@@ -35,13 +34,8 @@ async function saveProductImage(file: File): Promise<string | undefined> {
     throw new ImageTypeError(t("imageTypeError"));
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
   const ext = path.extname(file.name) || "";
-  const filename = `${randomUUID()}${ext}`;
-  const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
-  await mkdir(uploadDir, { recursive: true });
-  await writeFile(path.join(uploadDir, filename), buffer);
-  return `/uploads/products/${filename}`;
+  return saveUpload(file, "products", ext);
 }
 
 export type ProductActionState = {

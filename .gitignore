@@ -1,5 +1,8 @@
 node_modules
+.next
 .env
 tsconfig.tsbuildinfo
 public/uploads
+public/uploads.bak-premigration
+/var/uploads
 .claude/

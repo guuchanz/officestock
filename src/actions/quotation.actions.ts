@@ -2,12 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { randomUUID } from "crypto";
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
 import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { saveUpload } from "@/lib/uploads";
 
 async function buildQuotationSchema() {
   const t = await getTranslations("QuotationActions");
@@ -45,12 +43,8 @@ async function savePdfFile(file: File): Promise<{ url: string; name: string }> {
     throw new PdfTypeError(t("pdfTooLarge"));
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const filename = `${randomUUID()}.pdf`;
-  const uploadDir = path.join(process.cwd(), "public", "uploads", "quotations");
-  await mkdir(uploadDir, { recursive: true });
-  await writeFile(path.join(uploadDir, filename), buffer);
-  return { url: `/uploads/quotations/${filename}`, name: file.name };
+  const url = await saveUpload(file, "quotations", ".pdf");
+  return { url, name: file.name };
 }
 
 export type QuotationActionState = {
