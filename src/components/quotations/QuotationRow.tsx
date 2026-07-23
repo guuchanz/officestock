@@ -6,6 +6,7 @@ import { clsx } from "clsx";
 import { useTranslations, useLocale } from "next-intl";
 import { FileText, Trash2, Pencil } from "lucide-react";
 import { deleteQuotationAction } from "@/actions/quotation.actions";
+import Spinner from "@/components/ui/Spinner";
 
 interface QuotationRowProps {
   quotation: {
@@ -75,7 +76,7 @@ export default function QuotationRow({ quotation }: QuotationRowProps) {
             className={clsx("btn-ghost p-1.5 text-red-500", isDeleting && "opacity-60 cursor-not-allowed")}
             title={tc("delete")}
           >
-            <Trash2 size={14} />
+            {isDeleting ? <Spinner size={14} /> : <Trash2 size={14} />}
           </button>
         </div>
         {deleteError && <p className="mt-1 text-xs text-red-600 text-right">{deleteError}</p>}

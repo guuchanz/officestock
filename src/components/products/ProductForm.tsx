@@ -7,6 +7,7 @@ import Image from "next/image";
 import { clsx } from "clsx";
 import { useTranslations } from "next-intl";
 import { createProductAction, updateProductAction, type ProductActionState } from "@/actions/product.actions";
+import Spinner from "@/components/ui/Spinner";
 
 interface ProductFormProps {
   categories: { id: number; name: string }[];
@@ -146,6 +147,7 @@ export default function ProductForm({ categories, product }: ProductFormProps) {
           {tc("cancel")}
         </Link>
         <button type="submit" disabled={pending} className={clsx("btn-primary flex-1 justify-center py-2.5", pending && "opacity-60 cursor-not-allowed")}>
+          {pending && <Spinner size={14} />}
           {pending ? tc("saving") : isEdit ? t("saveEdit") : t("saveNew")}
         </button>
       </div>

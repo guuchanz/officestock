@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Search, X } from "lucide-react";
+import Spinner from "@/components/ui/Spinner";
 
 interface QuotationFiltersProps {
   q?:    string;
@@ -15,7 +16,7 @@ export default function QuotationFilters({ q, from, to }: QuotationFiltersProps)
   const t          = useTranslations("QuotationFilters");
   const router     = useRouter();
   const pathname   = usePathname();
-  const [, startT] = useTransition();
+  const [isFiltering, startT] = useTransition();
 
   const [search, setSearch] = useState(q ?? "");
   const [dateFrom, setDateFrom] = useState(from ?? "");
@@ -56,7 +57,11 @@ export default function QuotationFilters({ q, from, to }: QuotationFiltersProps)
   return (
     <div className="flex flex-wrap items-center gap-3 px-5 py-4 border-b border-slate-100">
       <div className="relative flex-1 min-w-[220px]">
-        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        {isFiltering ? (
+          <Spinner size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        ) : (
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        )}
         <input
           value={search}
           onChange={(e) => handleSearch(e.target.value)}

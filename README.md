@@ -20,6 +20,7 @@
 | Forms | `useActionState` + Server Actions (no client form library) |
 | Charts | Hand-built responsive SVG line charts (no external chart dependency) |
 | Export | ExcelJS (.xlsx) + PDFKit (.pdf) |
+| Loading UX | `nextjs-toploader` (progress bar ตอนเปลี่ยนหน้า) + Next.js `loading.tsx` (skeleton) + spinner ในปุ่ม/ช่องค้นหา |
 
 ---
 
@@ -188,6 +189,7 @@ messages/               # ไฟล์แปลภาษา ไทย (th.json) 
 - ✅ **จัดการผู้ใช้งาน** — CRUD ผู้ใช้งานสำหรับ Admin (Moderator เพิ่มได้เฉพาะ Staff), บังคับเปลี่ยนรหัสผ่านเมื่อเข้าระบบครั้งแรก, รีเซ็ตรหัสผ่านโดย Admin
 - ✅ **หลายภาษา (TH/EN)** — สลับภาษาได้จาก Sidebar ทุกหน้า จำค่าไว้ด้วย cookie
 - ✅ **Auth** — Login ด้วย Email/Password (bcrypt), ชื่อผู้ทำรายการบันทึกอัตโนมัติ
+- ✅ **Loading Indicator** — progress bar สีน้ำเงินด้านบนจอตอนเปลี่ยนเมนู/หน้า (คลิก Sidebar หรือ redirect ใดๆ), skeleton โครงตารางระหว่างรอข้อมูลจาก server, และ spinner ในปุ่ม/ช่องค้นหาตอนบันทึก/ลบ/กรองข้อมูล (ไม่ใช่แค่จางลงเฉยๆ เหมือนเดิม)
 
 ---
 

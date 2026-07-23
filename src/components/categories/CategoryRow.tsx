@@ -9,6 +9,7 @@ import {
   deleteCategoryAction,
   type CategoryActionState,
 } from "@/actions/category.actions";
+import Spinner from "@/components/ui/Spinner";
 
 interface CategoryRowProps {
   category: { id: number; name: string; _count: { products: number } };
@@ -67,7 +68,7 @@ export default function CategoryRow({ category }: CategoryRowProps) {
             className={clsx("btn-ghost p-1.5 text-green-600", pending && "opacity-60 cursor-not-allowed")}
             title={tc("save")}
           >
-            <Check size={16} />
+            {pending ? <Spinner size={16} /> : <Check size={16} />}
           </button>
           <button
             type="button"
@@ -100,7 +101,7 @@ export default function CategoryRow({ category }: CategoryRowProps) {
             className={clsx("btn-ghost p-1.5 text-red-500", isDeleting && "opacity-60 cursor-not-allowed")}
             title={tc("delete")}
           >
-            <Trash2 size={14} />
+            {isDeleting ? <Spinner size={14} /> : <Trash2 size={14} />}
           </button>
         </div>
       </div>

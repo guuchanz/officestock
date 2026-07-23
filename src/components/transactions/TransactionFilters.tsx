@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Search, X, FileSpreadsheet } from "lucide-react";
+import Spinner from "@/components/ui/Spinner";
 
 interface TransactionFiltersProps {
   q?:    string;
@@ -15,7 +16,7 @@ export default function TransactionFilters({ q, from, to }: TransactionFiltersPr
   const t          = useTranslations("TransactionFilters");
   const router     = useRouter();
   const pathname   = usePathname();
-  const [, startT] = useTransition();
+  const [isFiltering, startT] = useTransition();
 
   const [search, setSearch] = useState(q ?? "");
   const [dateFrom, setDateFrom] = useState(from ?? "");
@@ -65,7 +66,11 @@ export default function TransactionFilters({ q, from, to }: TransactionFiltersPr
   return (
     <div className="flex flex-wrap items-center gap-3 px-5 py-4 border-b border-slate-100">
       <div className="relative flex-1 min-w-[220px]">
-        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        {isFiltering ? (
+          <Spinner size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        ) : (
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        )}
         <input
           value={search}
           onChange={(e) => handleSearch(e.target.value)}

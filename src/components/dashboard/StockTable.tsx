@@ -10,6 +10,7 @@ import { Search, ArrowDownCircle, ArrowUpCircle, Package, Pencil, Trash2 } from 
 import type { ProductWithCategory } from "@/types";
 import StockModal from "@/components/stock/StockModal";
 import { archiveProductAction } from "@/actions/product.actions";
+import Spinner from "@/components/ui/Spinner";
 
 interface StockTableProps {
   products:    ProductWithCategory[];
@@ -23,7 +24,7 @@ export default function StockTable({ products, departments, search }: StockTable
   const router       = useRouter();
   const pathname     = usePathname();
   const [q, setQ]   = useState(search ?? "");
-  const [, startT]  = useTransition();
+  const [isSearching, startT]  = useTransition();
   const [archivingId, setArchivingId] = useState<number | null>(null);
   const [isArchiving, startArchive]   = useTransition();
   const [archiveError, setArchiveError] = useState<{ id: number; message: string } | null>(null);
@@ -79,7 +80,11 @@ export default function StockTable({ products, departments, search }: StockTable
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <h2 className="font-semibold text-slate-800">{t("title")}</h2>
           <div className="relative">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            {isSearching ? (
+              <Spinner size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            ) : (
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            )}
             <input
               value={q}
               onChange={(e) => handleSearch(e.target.value)}
@@ -207,7 +212,7 @@ export default function StockTable({ products, departments, search }: StockTable
                           )}
                           title={t("delete")}
                         >
-                          <Trash2 size={14} />
+                          {isArchiving && archivingId === p.id ? <Spinner size={14} /> : <Trash2 size={14} />}
                         </button>
                       </div>
                       {archiveError?.id === p.id && (

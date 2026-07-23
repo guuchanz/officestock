@@ -11,6 +11,7 @@ import {
   deleteUserAction,
   type UserActionState,
 } from "@/actions/user.actions";
+import Spinner from "@/components/ui/Spinner";
 
 interface UserRowProps {
   user: {
@@ -96,7 +97,7 @@ export default function UserRow({ user, isSelf, canManage }: UserRowProps) {
               className={clsx("btn-ghost p-1.5 text-green-600", editPending && "opacity-60 cursor-not-allowed")}
               title={tc("save")}
             >
-              <Check size={16} />
+              {editPending ? <Spinner size={16} /> : <Check size={16} />}
             </button>
             <button
               type="button"
@@ -136,6 +137,7 @@ export default function UserRow({ user, isSelf, canManage }: UserRowProps) {
               disabled={resetPending}
               className={clsx("btn-primary py-1.5", resetPending && "opacity-60 cursor-not-allowed")}
             >
+              {resetPending && <Spinner size={14} />}
               {resetPending ? tc("saving") : t("resetPasswordSubmit")}
             </button>
             <button
@@ -189,7 +191,7 @@ export default function UserRow({ user, isSelf, canManage }: UserRowProps) {
                 className={clsx("btn-ghost p-1.5 text-red-500", isDeleting && "opacity-60 cursor-not-allowed")}
                 title={tc("delete")}
               >
-                <Trash2 size={14} />
+                {isDeleting ? <Spinner size={14} /> : <Trash2 size={14} />}
               </button>
             )}
           </div>
