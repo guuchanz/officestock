@@ -6,9 +6,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { clsx } from "clsx";
 import { useTranslations } from "next-intl";
-import { Search, ArrowDownCircle, ArrowUpCircle, Package, Pencil } from "lucide-react";
+import { Search, ArrowDownCircle, ArrowUpCircle, Package, Pencil, Trash2 } from "lucide-react";
 import type { ProductWithCategory } from "@/types";
 import StockModal from "@/components/stock/StockModal";
+import { archiveProductAction } from "@/actions/product.actions";
 
 interface StockTableProps {
   products:    ProductWithCategory[];
@@ -23,6 +24,9 @@ export default function StockTable({ products, departments, search }: StockTable
   const pathname     = usePathname();
   const [q, setQ]   = useState(search ?? "");
   const [, startT]  = useTransition();
+  const [archivingId, setArchivingId] = useState<number | null>(null);
+  const [isArchiving, startArchive]   = useTransition();
+  const [archiveError, setArchiveError] = useState<{ id: number; message: string } | null>(null);
 
   const [modal, setModal] = useState<{
     open: boolean;
@@ -55,6 +59,17 @@ export default function StockTable({ products, departments, search }: StockTable
   const openModal = (type: "IN" | "OUT", product: ProductWithCategory) => {
     setModalKey((k) => k + 1);
     setModal({ open: true, type, product });
+  };
+
+  const handleDelete = (product: ProductWithCategory) => {
+    if (!window.confirm(t("confirmDelete", { name: product.name }))) return;
+    setArchiveError(null);
+    setArchivingId(product.id);
+    startArchive(async () => {
+      const res = await archiveProductAction(product.id);
+      if (!res.success) setArchiveError({ id: product.id, message: res.message });
+      setArchivingId(null);
+    });
   };
 
   return (
@@ -183,7 +198,21 @@ export default function StockTable({ products, departments, search }: StockTable
                           <ArrowDownCircle size={14} />
                           {t("import")}
                         </button>
+                        <button
+                          onClick={() => handleDelete(p)}
+                          disabled={isArchiving && archivingId === p.id}
+                          className={clsx(
+                            "flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-400 hover:bg-red-50 hover:text-red-600 transition-all",
+                            isArchiving && archivingId === p.id && "opacity-60 cursor-not-allowed"
+                          )}
+                          title={t("delete")}
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
+                      {archiveError?.id === p.id && (
+                        <p className="mt-1 text-right text-xs text-red-600">{archiveError.message}</p>
+                      )}
                     </td>
                   </tr>
                 );

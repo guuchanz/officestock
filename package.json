@@ -10,6 +10,7 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "ts-node --project tsconfig.seed.json prisma/seed.ts",
+    "db:reset-stock": "ts-node --project tsconfig.seed.json prisma/reset-stock.ts",
     "db:studio": "prisma studio"
   },
   "dependencies": {

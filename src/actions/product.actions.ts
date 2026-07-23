@@ -148,16 +148,19 @@ export async function getProductById(id: number) {
 
 export async function getProducts(search?: string) {
   const products = await prisma.product.findMany({
-    where: search
-      ? {
-          OR: [
-            { name: { contains: search } },
-            { code: { contains: search } },
-            { lotNo: { contains: search } },
-            { category: { name: { contains: search } } },
-          ],
-        }
-      : undefined,
+    where: {
+      isActive: true,
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search } },
+              { code: { contains: search } },
+              { lotNo: { contains: search } },
+              { category: { name: { contains: search } } },
+            ],
+          }
+        : {}),
+    },
     include: { category: { select: { id: true, name: true } } },
     orderBy: { name: "asc" },
   });
@@ -166,6 +169,22 @@ export async function getProducts(search?: string) {
     ...p,
     unitPrice: p.unitPrice ? Number(p.unitPrice) : null,
   }));
+}
+
+export async function archiveProductAction(id: number): Promise<ProductActionState> {
+  const session = await auth();
+  const t = await getTranslations("ProductActions");
+  if (!session?.user) return { success: false, message: t("loginRequired") };
+
+  try {
+    await prisma.product.update({ where: { id }, data: { isActive: false } });
+    revalidatePath("/dashboard");
+    revalidatePath("/products");
+    return { success: true, message: t("archiveSuccess") };
+  } catch (e: any) {
+    if (e.code === "P2025") return { success: false, message: t("notFound") };
+    return { success: false, message: t("genericError") };
+  }
 }
 
 export async function getCategories() {

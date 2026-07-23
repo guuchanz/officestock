@@ -63,6 +63,8 @@
     "withdraw": "Withdraw",
     "importTitle": "Import",
     "import": "Import",
+    "delete": "Delete",
+    "confirmDelete": "Delete product \"{name}\"? It will be hidden from the list, but its transaction history will be kept.",
     "showingCount": "Showing {count} items"
   },
   "StockModal": {
@@ -212,6 +214,7 @@
     "notFound": "Product not found",
     "createSuccess": "Product added successfully",
     "updateSuccess": "Product updated successfully",
+    "archiveSuccess": "Product deleted successfully",
     "duplicateCode": "This product code already exists",
     "genericError": "Something went wrong"
   },

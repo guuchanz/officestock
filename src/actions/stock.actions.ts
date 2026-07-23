@@ -120,9 +120,8 @@ export async function getDashboardStats() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const [totalProducts, lowStockProducts, todayTx] = await Promise.all([
-    prisma.product.count(),
-    prisma.product.count({ where: { totalStock: { lte: prisma.product.fields.minStock } } }),
+  const [totalProducts, todayTx] = await Promise.all([
+    prisma.product.count({ where: { isActive: true } }),
     prisma.stockTransaction.findMany({
       where: { createdAt: { gte: today } },
       select: { type: true, quantity: true },
@@ -131,9 +130,9 @@ export async function getDashboardStats() {
 
   // workaround: lte on same field not supported in all Prisma versions
   const lowStock = await prisma.product.count({
-    where: { AND: [{ totalStock: { gt: 0 } }, { totalStock: { lte: 5 } }] },
+    where: { isActive: true, AND: [{ totalStock: { gt: 0 } }, { totalStock: { lte: 5 } }] },
   });
-  const zeroStock = await prisma.product.count({ where: { totalStock: 0 } });
+  const zeroStock = await prisma.product.count({ where: { isActive: true, totalStock: 0 } });
 
   const todayIn  = todayTx.filter(t => t.type === "IN").reduce((s, t) => s + t.quantity, 0);
   const todayOut = todayTx.filter(t => t.type === "OUT").reduce((s, t) => s + t.quantity, 0);

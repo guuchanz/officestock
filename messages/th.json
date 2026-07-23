@@ -63,6 +63,8 @@
     "withdraw": "เบิก",
     "importTitle": "นำเข้า",
     "import": "นำเข้า",
+    "delete": "ลบ",
+    "confirmDelete": "ลบสินค้า \"{name}\" ใช่หรือไม่? สินค้าจะถูกซ่อนจากรายการ แต่ประวัติการทำรายการจะยังถูกเก็บไว้",
     "showingCount": "แสดง {count} รายการ"
   },
   "StockModal": {
@@ -212,6 +214,7 @@
     "notFound": "ไม่พบสินค้า",
     "createSuccess": "เพิ่มสินค้าสำเร็จ",
     "updateSuccess": "แก้ไขสินค้าสำเร็จ",
+    "archiveSuccess": "ลบสินค้าสำเร็จ",
     "duplicateCode": "รหัสสินค้านี้มีอยู่แล้ว",
     "genericError": "เกิดข้อผิดพลาด"
   },

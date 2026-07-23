@@ -85,6 +85,7 @@ model Product {
   unit         String?
   unitPrice    Decimal?           @db.Decimal(10, 2)
   image        String?
+  isActive     Boolean            @default(true)
   transactions StockTransaction[]
   updatedAt    DateTime           @updatedAt
   createdAt    DateTime           @default(now())
