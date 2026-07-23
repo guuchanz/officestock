@@ -21,7 +21,7 @@ const config: Config = {
         warning: "#f59e0b",
       },
       fontFamily: {
-        sans: ["Inter", "Noto Sans Thai", "sans-serif"],
+        sans: ["var(--font-inter)", "var(--font-noto-sans-thai)", "sans-serif"],
       },
     },
   },
