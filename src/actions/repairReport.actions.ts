@@ -46,6 +46,7 @@ export async function getRepairReport(year: number, month?: number): Promise<Rep
       department: { select: { name: true } },
       technician: { select: { name: true } },
       deviceType: { select: { name: true } },
+      parts:      { orderBy: { id: "asc" } },
     },
   });
 

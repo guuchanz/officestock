@@ -1,6 +1,7 @@
 import {
   LayoutDashboard, History, Package, FileBarChart, Building2,
   Users, FileText, Tags, Wrench, ClipboardList, PlusCircle, UserCog,
+  CalendarClock, HardHat, Factory, MapPin,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -13,7 +14,7 @@ export interface NavItem {
 }
 
 export interface NavModule {
-  key: "stock" | "repair";
+  key: "stock" | "repair" | "maintenance";
   labelKey: string;
   href: string;
   icon: LucideIcon;
@@ -49,6 +50,23 @@ export const MODULES: NavModule[] = [
       { href: "/repairs/technicians",  key: "technicians",   icon: UserCog },
       { href: "/repairs/device-types", key: "deviceTypes",   icon: Tags },
       { href: "/repairs/reports",      key: "repairReports", icon: FileBarChart },
+    ],
+  },
+  {
+    key: "maintenance",
+    labelKey: "moduleMaintenance",
+    href: "/maintenance/overview",
+    icon: CalendarClock,
+    items: [
+      { href: "/maintenance/overview",  key: "maintOverview",  icon: LayoutDashboard },
+      { href: "/maintenance",           key: "maintEquipment", icon: HardHat },
+      { href: "/maintenance/new",       key: "maintNew",       icon: PlusCircle },
+      // Same list as /repairs/technicians, mounted per module so the header
+      // tab does not jump when it is opened. See TechnicianManager.
+      { href: "/maintenance/technicians", key: "technicians",  icon: UserCog },
+      { href: "/maintenance/factories", key: "factories",      icon: Factory },
+      { href: "/maintenance/areas",     key: "areas",          icon: MapPin },
+      { href: "/maintenance/reports",   key: "maintReports",   icon: FileBarChart },
     ],
   },
 ];

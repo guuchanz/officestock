@@ -3,9 +3,10 @@ import { getDashboardStats } from "@/actions/stock.actions";
 import { getProducts } from "@/actions/product.actions";
 import { getDepartments } from "@/actions/department.actions";
 import { getRepairDashboardStats } from "@/actions/repair.actions";
+import { getMaintenanceDashboardStats } from "@/actions/equipment.actions";
 import MetricCard from "@/components/dashboard/MetricCard";
 import StockTable from "@/components/dashboard/StockTable";
-import { Package, AlertTriangle, TrendingDown, TrendingUp, Wrench, Clock } from "lucide-react";
+import { Package, AlertTriangle, TrendingDown, TrendingUp, Wrench, Clock, CalendarClock } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
 
 export const revalidate = 0;
@@ -18,9 +19,10 @@ export default async function DashboardPage({
   const params = await searchParams;
   const search = params.q;
 
-  const [stats, repairStats, products, departments, t, locale] = await Promise.all([
+  const [stats, repairStats, maintStats, products, departments, t, locale] = await Promise.all([
     getDashboardStats(),
     getRepairDashboardStats(),
+    getMaintenanceDashboardStats(),
     getProducts(search),
     getDepartments(),
     getTranslations("Dashboard"),
@@ -77,6 +79,14 @@ export default async function DashboardPage({
             value={repairStats.overdue}
             icon={<Clock size={20} />}
             color="rose"
+          />
+        </Link>
+        <Link href="/maintenance?bucket=OVERDUE">
+          <MetricCard
+            label={t("overdueMaintenance")}
+            value={maintStats.overdue}
+            icon={<CalendarClock size={20} />}
+            color="amber"
           />
         </Link>
       </div>

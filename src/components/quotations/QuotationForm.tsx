@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { clsx } from "clsx";
 import { useTranslations } from "next-intl";
+import FilePicker from "@/components/common/FilePicker";
+import QuotationFiles from "./QuotationFiles";
 import { createQuotationAction, updateQuotationAction, type QuotationActionState } from "@/actions/quotation.actions";
 
 const initState: QuotationActionState = { success: false, message: "" };
@@ -23,7 +25,8 @@ interface QuotationFormProps {
     orderDate:    Date;
     receiveDate:  Date | null;
     totalAmount:  number;
-    fileName:     string;
+    fileName:     string | null;
+    files:        { id: number; docName: string; fileUrl: string; fileName: string }[];
   };
 }
 
@@ -103,12 +106,16 @@ export default function QuotationForm({ quotation }: QuotationFormProps) {
       </div>
 
       <div>
-        <label className="label" htmlFor="file">
+        <label className="label" htmlFor="files">
           {t("fileLabel")}{isEdit && <span className="text-slate-400 font-normal"> {t("fileEditHint")}</span>}
         </label>
-        {isEdit && <p className="mb-2 text-xs text-slate-500 truncate">{t("currentFile")}: {quotation.fileName}</p>}
-        <input id="file" name="file" type="file" accept="application/pdf" className="input" required={!isEdit} />
-        {fieldError("file") && <p className="mt-1 text-xs text-red-600">{fieldError("file")}</p>}
+        {isEdit && (
+          <div className="mb-2">
+            <QuotationFiles files={quotation.files} />
+          </div>
+        )}
+        <FilePicker accept="application/pdf" hint={t("fileHint")} />
+        {fieldError("files") && <p className="mt-1 text-xs text-red-600">{fieldError("files")}</p>}
       </div>
 
       {state.message && (

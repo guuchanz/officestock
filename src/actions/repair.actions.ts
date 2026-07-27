@@ -7,6 +7,8 @@ import { Prisma, RepairStatus, RepairType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { saveUpload } from "@/lib/uploads";
+import { pairFilesWithNames, type PendingAttachment } from "@/lib/attachments";
+import { pairParts, round2, type PendingPart } from "@/lib/parts";
 import {
   OVERDUE_DAYS, OPEN_STATUSES, CLOSED_STATUSES, TRANSITIONS,
 } from "@/lib/repair-constants";
@@ -17,10 +19,9 @@ export type RepairActionState = {
   errors?: Record<string, string[]>;
 };
 
+// PDF only. Files uploaded before this restriction keep working — the serving
+// route and the list icons still handle images — but new uploads are rejected.
 const EXT_FOR_MIME: Record<string, string> = {
-  "image/png":       ".png",
-  "image/jpeg":      ".jpg",
-  "image/webp":      ".webp",
   "application/pdf": ".pdf",
 };
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -44,8 +45,6 @@ async function buildRepairSchema() {
       serviceTag:    z.string().optional(),
       expressNo:     z.string().optional(),
       problem:       z.string().min(1, t("problemRequired")),
-      partsUsed:     z.string().optional(),
-      partsCost:     z.number().min(0, t("costInvalid")),
       labourCost:    z.number().min(0, t("costInvalid")),
       status:        z.nativeEnum(RepairStatus),
       technicianId:  z.number().int().positive().optional(),
@@ -83,8 +82,6 @@ function readRepairForm(formData: FormData) {
     serviceTag:    str("serviceTag"),
     expressNo:     str("expressNo"),
     problem:       ((formData.get("problem") as string) ?? "").trim(),
-    partsUsed:     str("partsUsed"),
-    partsCost:     num("partsCost") ?? 0,
     labourCost:    num("labourCost") ?? 0,
     status:        (formData.get("status") as RepairStatus) || RepairStatus.RECEIVED,
     technicianId:  num("technicianId"),
@@ -132,10 +129,21 @@ async function nextJobNumber(tx: Prisma.TransactionClient, when: Date): Promise<
   return `${prefix}${String(seq).padStart(3, "0")}`;
 }
 
-function readFiles(formData: FormData): File[] {
-  return formData
-    .getAll("files")
-    .filter((f): f is File => f instanceof File && f.size > 0);
+/**
+ * One `partCosts` input is rendered per part row, in the same order as
+ * `partNames`, so the two arrays line up by index.
+ */
+function readParts(formData: FormData): PendingPart[] {
+  return pairParts(formData.getAll("partNames"), formData.getAll("partCosts"));
+}
+
+const partsSubtotal = (parts: readonly PendingPart[]) =>
+  round2(parts.reduce((sum, p) => sum + p.cost, 0));
+
+function readFiles(formData: FormData): PendingAttachment[] {
+  // One `docNames` input is rendered per selected file, in FileList order,
+  // so the two arrays line up by index.
+  return pairFilesWithNames(formData.getAll("files"), formData.getAll("docNames"));
 }
 
 /**
@@ -143,21 +151,26 @@ function readFiles(formData: FormData): File[] {
  * `saveAttachments` would leave an orphaned job behind whenever a file was
  * rejected, because the job is inserted first.
  */
-async function assertAttachmentsValid(files: File[]) {
+async function assertAttachmentsValid(pending: PendingAttachment[]) {
   const t = await getTranslations("RepairActions");
-  for (const file of files) {
+  for (const { file } of pending) {
     if (!EXT_FOR_MIME[file.type]) throw new AttachmentError(t("fileTypeError"));
     if (file.size > MAX_FILE_SIZE) throw new AttachmentError(t("fileTooLarge"));
   }
 }
 
-async function saveAttachments(files: File[], repairJobId: number, userId: string) {
-  for (const file of files) {
+async function saveAttachments(
+  pending: PendingAttachment[],
+  repairJobId: number,
+  userId: string
+) {
+  for (const { file, docName } of pending) {
     const ext = EXT_FOR_MIME[file.type];
     const url = await saveUpload(file, "repairs", ext);
     await prisma.repairAttachment.create({
       data: {
         repairJobId,
+        docName,
         fileUrl:      url,
         fileName:     file.name,
         mimeType:     file.type,
@@ -184,6 +197,7 @@ export async function createRepairAction(
   const d = parsed.data;
 
   const files = readFiles(formData);
+  const parts = readParts(formData);
 
   try {
     await assertAttachmentsValid(files);
@@ -204,10 +218,12 @@ export async function createRepairAction(
           serviceTag:   d.serviceTag ?? null,
           expressNo:    d.expressNo ?? null,
           problem:      d.problem,
-          partsUsed:    d.partsUsed ?? null,
-          partsCost:    d.partsCost,
+          partsCost:    partsSubtotal(parts),
           labourCost:   d.labourCost,
-          totalCost:    d.partsCost + d.labourCost,
+          totalCost:    round2(partsSubtotal(parts) + d.labourCost),
+          parts: parts.length
+            ? { create: parts.map((p) => ({ name: p.name, cost: new Prisma.Decimal(p.cost) })) }
+            : undefined,
           status:       d.status,
           technicianId: d.technicianId ?? null,
           createdById:  userId,
@@ -261,6 +277,7 @@ export async function updateRepairAction(
   }
 
   const files = readFiles(formData);
+  const parts = readParts(formData);
 
   try {
     await assertAttachmentsValid(files);
@@ -279,10 +296,15 @@ export async function updateRepairAction(
         serviceTag:   d.serviceTag ?? null,
         expressNo:    d.expressNo ?? null,
         problem:      d.problem,
-        partsUsed:    d.partsUsed ?? null,
-        partsCost:    d.partsCost,
+        partsCost:    partsSubtotal(parts),
         labourCost:   d.labourCost,
-        totalCost:    d.partsCost + d.labourCost,
+        totalCost:    round2(partsSubtotal(parts) + d.labourCost),
+        // Replace the whole list: the form submits the rows as they now stand,
+        // so rows the user deleted must not survive the update.
+        parts: {
+          deleteMany: {},
+          create: parts.map((p) => ({ name: p.name, cost: new Prisma.Decimal(p.cost) })),
+        },
         status:       d.status,
         technicianId: d.technicianId ?? null,
         reportedAt:   d.reportedAt,
@@ -341,6 +363,30 @@ export async function deleteRepairAction(id: number): Promise<RepairActionState>
     revalidatePath("/repairs");
     revalidatePath("/repairs/overview");
     return { success: true, message: t("deleteSuccess") };
+  } catch (e: any) {
+    if (e.code === "P2025") return { success: false, message: t("notFound") };
+    return { success: false, message: t("genericError") };
+  }
+}
+
+export async function renameRepairAttachmentAction(
+  id: number,
+  docName: string
+): Promise<RepairActionState> {
+  const session = await auth();
+  const t = await getTranslations("RepairActions");
+  if (!session?.user) return { success: false, message: t("loginRequired") };
+
+  const trimmed = docName.trim();
+  if (!trimmed) return { success: false, message: t("docNameRequired") };
+
+  try {
+    const row = await prisma.repairAttachment.update({
+      where: { id },
+      data: { docName: trimmed.slice(0, 191) },
+    });
+    revalidatePath(`/repairs/${row.repairJobId}/edit`);
+    return { success: true, message: t("attachmentRenamed") };
   } catch (e: any) {
     if (e.code === "P2025") return { success: false, message: t("notFound") };
     return { success: false, message: t("genericError") };
@@ -429,6 +475,7 @@ export async function getRepairJobById(id: number) {
     where: { id },
     include: {
       attachments: { orderBy: { createdAt: "asc" } },
+      parts:       { orderBy: { id: "asc" } },
       department:  { select: { name: true } },
       technician:  { select: { name: true } },
       deviceType:  { select: { name: true } },
@@ -437,6 +484,7 @@ export async function getRepairJobById(id: number) {
   if (!job) return null;
   return {
     ...job,
+    parts:      job.parts.map((p) => ({ name: p.name, cost: Number(p.cost) })),
     partsCost:  Number(job.partsCost),
     labourCost: Number(job.labourCost),
     totalCost:  Number(job.totalCost),

@@ -10,6 +10,9 @@ import {
   createRepairAction, updateRepairAction, type RepairActionState,
 } from "@/actions/repair.actions";
 import RepairAttachments from "./RepairAttachments";
+import FilePicker from "@/components/common/FilePicker";
+import PartsEditor from "@/components/common/PartsEditor";
+import { round2 } from "@/lib/parts";
 
 const initState: RepairActionState = { success: false, message: "" };
 
@@ -39,13 +42,14 @@ interface RepairFormProps {
     expressNo: string | null;
     problem: string;
     partsUsed: string | null;
+    parts: { name: string; cost: number }[];
     partsCost: number;
     labourCost: number;
     status: RepairStatus;
     technicianId: number | null;
     reportedAt: Date;
     note: string | null;
-    attachments: { id: number; fileUrl: string; fileName: string; mimeType: string }[];
+    attachments: { id: number; docName: string; fileUrl: string; fileName: string; mimeType: string }[];
   };
 }
 
@@ -59,6 +63,12 @@ export default function RepairForm({ departments, technicians, deviceTypes, job 
     initState
   );
   const [type, setType] = useState<RepairType>(job?.type ?? RepairType.INTERNAL);
+
+  // Parts live inside PartsEditor; it reports its subtotal up so the grand
+  // total here matches what the server will recompute on submit.
+  const [partsSubtotal, setPartsSubtotal] = useState(job?.partsCost ?? 0);
+  const [labourCost, setLabourCost] = useState(String(job?.labourCost ?? 0));
+  const grandTotal = round2(partsSubtotal + (Number(labourCost) > 0 ? Number(labourCost) : 0));
   const router = useRouter();
 
   useEffect(() => {
@@ -200,22 +210,25 @@ export default function RepairForm({ departments, technicians, deviceTypes, job 
       </div>
 
       {/* Parts and cost */}
-      <div>
-        <label className="label" htmlFor="partsUsed">{t("partsUsedLabel")}</label>
-        <textarea id="partsUsed" name="partsUsed" rows={2} className="input resize-none" placeholder={t("partsUsedPlaceholder")} defaultValue={job?.partsUsed ?? ""} />
-        <p className="mt-1 text-xs text-slate-400">{t("partsUsedHint")}</p>
-      </div>
+      <PartsEditor defaultParts={job?.parts ?? []} onSubtotalChange={setPartsSubtotal} />
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="label" htmlFor="partsCost">{t("partsCostLabel")}</label>
-          <input id="partsCost" name="partsCost" type="number" min={0} step="0.01" className="input" placeholder="0.00" defaultValue={job?.partsCost ?? 0} />
-          {fieldError("partsCost") && <p className="mt-1 text-xs text-red-600">{fieldError("partsCost")}</p>}
-        </div>
-        <div>
           <label className="label" htmlFor="labourCost">{t("labourCostLabel")}</label>
-          <input id="labourCost" name="labourCost" type="number" min={0} step="0.01" className="input" placeholder="0.00" defaultValue={job?.labourCost ?? 0} />
+          <input
+            id="labourCost" name="labourCost" type="number" min={0} step="0.01"
+            className="input text-right" placeholder="0.00"
+            value={labourCost} onChange={(e) => setLabourCost(e.target.value)}
+          />
           {fieldError("labourCost") && <p className="mt-1 text-xs text-red-600">{fieldError("labourCost")}</p>}
+        </div>
+        <div className="flex items-end">
+          <div className="w-full rounded-lg bg-slate-50 px-3 py-2.5 text-right">
+            <span className="text-xs text-slate-500">{t("totalCostLabel")}</span>
+            <span className="ml-2 text-lg font-bold text-slate-900">
+              {grandTotal.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -228,8 +241,7 @@ export default function RepairForm({ departments, technicians, deviceTypes, job 
       <div>
         <label className="label">{t("attachmentsLabel")}</label>
         {isEdit && <div className="mb-2"><RepairAttachments attachments={job.attachments} /></div>}
-        <input name="files" type="file" multiple accept="image/png,image/jpeg,image/webp,application/pdf" className="input" />
-        <p className="mt-1 text-xs text-slate-400">{t("attachmentsHint")}</p>
+        <FilePicker hint={t("attachmentsHint")} />
       </div>
 
       {state.message && (

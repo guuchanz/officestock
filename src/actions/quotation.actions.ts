@@ -6,6 +6,7 @@ import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { saveUpload } from "@/lib/uploads";
+import { pairFilesWithNames, type PendingAttachment } from "@/lib/attachments";
 
 async function buildQuotationSchema() {
   const t = await getTranslations("QuotationActions");
@@ -34,17 +35,37 @@ const MAX_PDF_SIZE = 10 * 1024 * 1024; // 10MB
 
 class PdfTypeError extends Error {}
 
-async function savePdfFile(file: File): Promise<{ url: string; name: string }> {
-  const t = await getTranslations("QuotationActions");
-  if (file.type !== ALLOWED_PDF_TYPE) {
-    throw new PdfTypeError(t("pdfTypeError"));
-  }
-  if (file.size > MAX_PDF_SIZE) {
-    throw new PdfTypeError(t("pdfTooLarge"));
-  }
+function readFiles(formData: FormData): PendingAttachment[] {
+  // One `docNames` input per selected file, in FileList order — the shared
+  // helper zips them by index and drops empty files only after zipping.
+  return pairFilesWithNames(formData.getAll("files"), formData.getAll("docNames"));
+}
 
-  const url = await saveUpload(file, "quotations", ".pdf");
-  return { url, name: file.name };
+/**
+ * Rejects every bad file *before* anything is written, so a rejected upload
+ * cannot leave a half-saved quotation or an orphaned file on disk.
+ */
+async function assertPdfsValid(pending: PendingAttachment[]) {
+  const t = await getTranslations("QuotationActions");
+  for (const { file } of pending) {
+    if (file.type !== ALLOWED_PDF_TYPE) throw new PdfTypeError(t("pdfTypeError"));
+    if (file.size > MAX_PDF_SIZE) throw new PdfTypeError(t("pdfTooLarge"));
+  }
+}
+
+async function savePdfFiles(pending: PendingAttachment[], userId: string) {
+  const rows = [];
+  for (const { file, docName } of pending) {
+    const url = await saveUpload(file, "quotations", ".pdf");
+    rows.push({
+      docName,
+      fileUrl:      url,
+      fileName:     file.name,
+      mimeType:     file.type,
+      uploadedById: userId,
+    });
+  }
+  return rows;
 }
 
 export type QuotationActionState = {
@@ -81,13 +102,14 @@ export async function createQuotationAction(
     return { success: false, message: t("invalidData"), errors: parsed.error.flatten().fieldErrors };
   }
 
-  const file = formData.get("file") as File | null;
-  if (!file || file.size === 0) {
-    return { success: false, message: t("fileRequired"), errors: { file: [t("fileRequired")] } };
+  const pending = readFiles(formData);
+  if (pending.length === 0) {
+    return { success: false, message: t("fileRequired"), errors: { files: [t("fileRequired")] } };
   }
 
   try {
-    const { url, name } = await savePdfFile(file);
+    await assertPdfsValid(pending);
+    const files = await savePdfFiles(pending, session.user.id);
     await prisma.quotation.create({
       data: {
         qtNumber:     parsed.data.qtNumber,
@@ -96,15 +118,32 @@ export async function createQuotationAction(
         orderDate:    parsed.data.orderDate,
         receiveDate:  parsed.data.receiveDate ?? null,
         totalAmount:  parsed.data.totalAmount,
-        fileUrl:      url,
-        fileName:     name,
         uploadedById: session.user.id,
+        files: { create: files },
       },
     });
     revalidatePath("/quotations");
     return { success: true, message: t("createSuccess") };
   } catch (e: any) {
     if (e instanceof PdfTypeError) return { success: false, message: e.message };
+    return { success: false, message: t("genericError") };
+  }
+}
+
+export async function deleteQuotationFileAction(
+  id: number
+): Promise<QuotationActionState> {
+  const session = await auth();
+  const t = await getTranslations("QuotationActions");
+  if (!session?.user) return { success: false, message: t("loginRequired") };
+
+  try {
+    const row = await prisma.quotationFile.delete({ where: { id } });
+    revalidatePath("/quotations");
+    revalidatePath(`/quotations/${row.quotationId}/edit`);
+    return { success: true, message: t("fileDeleted") };
+  } catch (e: any) {
+    if (e.code === "P2025") return { success: false, message: t("notFound") };
     return { success: false, message: t("genericError") };
   }
 }
@@ -127,8 +166,11 @@ export async function updateQuotationAction(
   }
 
   try {
-    const file = formData.get("file") as File | null;
-    const replacement = file && file.size > 0 ? await savePdfFile(file) : undefined;
+    const pending = readFiles(formData);
+    await assertPdfsValid(pending);
+    // Newly picked files are *added*; existing ones are removed individually
+    // with the delete button, so an edit never silently drops attachments.
+    const files = pending.length ? await savePdfFiles(pending, session.user!.id!) : [];
 
     await prisma.quotation.update({
       where: { id },
@@ -139,7 +181,7 @@ export async function updateQuotationAction(
         orderDate:    parsed.data.orderDate,
         receiveDate:  parsed.data.receiveDate ?? null,
         totalAmount:  parsed.data.totalAmount,
-        ...(replacement ? { fileUrl: replacement.url, fileName: replacement.name } : {}),
+        ...(files.length ? { files: { create: files } } : {}),
       },
     });
     revalidatePath("/quotations");
@@ -197,13 +239,19 @@ export async function getQuotations(filters: QuotationFilters = {}) {
   const quotations = await prisma.quotation.findMany({
     where,
     orderBy: { orderDate: "desc" },
-    include: { uploadedBy: { select: { name: true, email: true } } },
+    include: {
+      uploadedBy: { select: { name: true, email: true } },
+      files: { orderBy: { id: "asc" } },
+    },
   });
   return quotations.map((q) => ({ ...q, totalAmount: Number(q.totalAmount) }));
 }
 
 export async function getQuotationById(id: number) {
-  const quotation = await prisma.quotation.findUnique({ where: { id } });
+  const quotation = await prisma.quotation.findUnique({
+    where: { id },
+    include: { files: { orderBy: { id: "asc" } } },
+  });
   if (!quotation) return null;
   return { ...quotation, totalAmount: Number(quotation.totalAmount) };
 }

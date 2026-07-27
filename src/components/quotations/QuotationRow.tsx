@@ -17,8 +17,9 @@ interface QuotationRowProps {
     orderDate:    Date;
     receiveDate:  Date | null;
     totalAmount:  number;
-    fileUrl:      string;
-    fileName:     string;
+    fileUrl:      string | null;
+    fileName:     string | null;
+    files:        { id: number; docName: string; fileUrl: string; fileName: string }[];
   };
 }
 
@@ -55,15 +56,25 @@ export default function QuotationRow({ quotation }: QuotationRowProps) {
         {`฿${quotation.totalAmount.toLocaleString(dateLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
       </td>
       <td className="px-4 py-3.5">
-        <a
-          href={quotation.fileUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 transition-all w-fit"
-        >
-          <FileText size={14} />
-          {t("viewPdf")}
-        </a>
+        {quotation.files.length === 0 ? (
+          <span className="text-xs text-slate-300">—</span>
+        ) : (
+          <div className="space-y-0.5">
+            {quotation.files.map((f) => (
+              <a
+                key={f.id}
+                href={f.fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={f.fileName}
+                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold text-blue-600 hover:bg-blue-50 transition-all w-fit max-w-[200px]"
+              >
+                <FileText size={14} className="shrink-0" />
+                <span className="truncate">{f.docName || f.fileName}</span>
+              </a>
+            ))}
+          </div>
+        )}
       </td>
       <td className="px-5 py-3.5">
         <div className="flex items-center justify-end gap-1">
