@@ -18,6 +18,8 @@ model User {
   role          Role               @default(STAFF)
   transactions  StockTransaction[]
   quotations    Quotation[]
+  repairJobs        RepairJob[]
+  repairAttachments RepairAttachment[]
   accounts      Account[]
   sessions      Session[]
   createdAt     DateTime           @default(now())
@@ -68,6 +70,7 @@ model Department {
   id           Int                @id @default(autoincrement())
   name         String             @unique
   transactions StockTransaction[]
+  repairJobs   RepairJob[]
   createdAt    DateTime           @default(now())
 }
 
@@ -126,4 +129,97 @@ model Quotation {
   uploadedById String
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+}
+
+enum RepairType {
+  INTERNAL
+  EXTERNAL
+}
+
+enum RepairStatus {
+  RECEIVED
+  IN_PROGRESS
+  DONE
+  RETURNED
+  CANCELLED
+}
+
+model Technician {
+  id        Int         @id @default(autoincrement())
+  name      String      @unique
+  phone     String?
+  isActive  Boolean     @default(true)
+  repairs   RepairJob[]
+  createdAt DateTime    @default(now())
+}
+
+model DeviceType {
+  id        Int         @id @default(autoincrement())
+  name      String      @unique
+  isActive  Boolean     @default(true)
+  repairs   RepairJob[]
+  createdAt DateTime    @default(now())
+}
+
+model RepairJob {
+  id            Int          @id @default(autoincrement())
+  jobNumber     String       @unique
+  type          RepairType
+
+  department    Department?  @relation(fields: [departmentId], references: [id])
+  departmentId  Int?
+
+  customerName  String?
+  customerPhone String?
+
+  // Person actually holding the device, on both internal and external jobs.
+  ownerName     String?
+  ownerTel      String?
+
+  deviceType    DeviceType?  @relation(fields: [deviceTypeId], references: [id])
+  deviceTypeId  Int?
+
+  deviceName    String
+  deviceModel   String?
+  serialNo      String?
+  serviceTag    String?
+  expressNo     String?
+  problem       String       @db.Text
+
+  partsUsed     String?      @db.Text
+  partsCost     Decimal      @default(0) @db.Decimal(10, 2)
+  labourCost    Decimal      @default(0) @db.Decimal(10, 2)
+  totalCost     Decimal      @default(0) @db.Decimal(10, 2)
+
+  status        RepairStatus @default(RECEIVED)
+  technician    Technician?  @relation(fields: [technicianId], references: [id])
+  technicianId  Int?
+
+  createdBy     User         @relation(fields: [createdById], references: [id])
+  createdById   String
+
+  reportedAt    DateTime     @default(now())
+  closedAt      DateTime?
+  note          String?      @db.Text
+
+  attachments   RepairAttachment[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([status])
+  @@index([reportedAt])
+}
+
+model RepairAttachment {
+  id           Int       @id @default(autoincrement())
+  repairJob    RepairJob @relation(fields: [repairJobId], references: [id], onDelete: Cascade)
+  repairJobId  Int
+  fileUrl      String
+  fileName     String
+  mimeType     String
+  uploadedBy   User      @relation(fields: [uploadedById], references: [id])
+  uploadedById String
+  createdAt    DateTime  @default(now())
+
+  @@index([repairJobId])
 }

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getYearTransactionDetails } from "@/actions/report.actions";
 import { buildExcelReport, buildPdfReport } from "@/lib/reportExport";
+import {
+  TRANSACTION_EXCEL_COLUMNS, TRANSACTION_PDF_COLUMNS, transactionFooter,
+} from "@/lib/reportColumns";
 
 export const runtime = "nodejs";
 
@@ -25,7 +28,7 @@ export async function GET(
   const rows = await getYearTransactionDetails(year);
 
   if (format === "excel") {
-    const buffer = await buildExcelReport(`รายงาน ${year}`, rows);
+    const buffer = await buildExcelReport(`รายงาน ${year}`, TRANSACTION_EXCEL_COLUMNS, rows);
     return new NextResponse(buffer as any, {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -35,7 +38,7 @@ export async function GET(
   }
 
   if (format === "pdf") {
-    const buffer = await buildPdfReport(`Stock Transaction Report - Year ${year}`, rows);
+    const buffer = await buildPdfReport(`Stock Transaction Report - Year ${year}`, TRANSACTION_PDF_COLUMNS, rows, transactionFooter);
     return new NextResponse(buffer as any, {
       headers: {
         "Content-Type": "application/pdf",

@@ -1,6 +1,7 @@
 import { signOut } from "@/lib/auth";
 import { LogOut } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import ModuleTabs from "./ModuleTabs";
 
 interface HeaderProps {
   user?: { name?: string | null; email?: string | null };
@@ -11,7 +12,7 @@ export default async function Header({ user }: HeaderProps) {
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6 shrink-0">
-      <div />
+      <ModuleTabs />
       <div className="flex items-center gap-4">
         <div className="text-right">
           <p className="text-sm font-semibold text-slate-800">{user?.name ?? t("defaultUser")}</p>

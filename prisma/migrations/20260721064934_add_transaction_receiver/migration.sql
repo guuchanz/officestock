@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE `stocktransaction` ADD COLUMN `receiver` VARCHAR(191) NULL;
+ALTER TABLE `StockTransaction` ADD COLUMN `receiver` VARCHAR(191) NULL;

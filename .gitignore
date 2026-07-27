@@ -6,3 +6,4 @@ public/uploads
 public/uploads.bak-premigration
 /var/uploads
 .claude/
+.superpowers/

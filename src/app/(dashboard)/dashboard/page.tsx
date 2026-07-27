@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { getDashboardStats } from "@/actions/stock.actions";
 import { getProducts } from "@/actions/product.actions";
 import { getDepartments } from "@/actions/department.actions";
+import { getRepairDashboardStats } from "@/actions/repair.actions";
 import MetricCard from "@/components/dashboard/MetricCard";
 import StockTable from "@/components/dashboard/StockTable";
-import { Package, AlertTriangle, TrendingDown, TrendingUp } from "lucide-react";
+import { Package, AlertTriangle, TrendingDown, TrendingUp, Wrench, Clock } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
 
 export const revalidate = 0;
@@ -16,8 +18,9 @@ export default async function DashboardPage({
   const params = await searchParams;
   const search = params.q;
 
-  const [stats, products, departments, t, locale] = await Promise.all([
+  const [stats, repairStats, products, departments, t, locale] = await Promise.all([
     getDashboardStats(),
+    getRepairDashboardStats(),
     getProducts(search),
     getDepartments(),
     getTranslations("Dashboard"),
@@ -35,7 +38,7 @@ export default async function DashboardPage({
       </div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         <MetricCard
           label={t("totalProducts")}
           value={stats.totalProducts}
@@ -60,6 +63,22 @@ export default async function DashboardPage({
           icon={<TrendingDown size={20} />}
           color="amber"
         />
+        <Link href="/repairs">
+          <MetricCard
+            label={t("openRepairs")}
+            value={repairStats.open}
+            icon={<Wrench size={20} />}
+            color="indigo"
+          />
+        </Link>
+        <Link href="/repairs">
+          <MetricCard
+            label={t("overdueRepairs")}
+            value={repairStats.overdue}
+            icon={<Clock size={20} />}
+            color="rose"
+          />
+        </Link>
       </div>
 
       {/* Stock Table */}

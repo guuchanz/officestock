@@ -1,7 +1,6 @@
 import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import path from "path";
-import type { TransactionDetailRow } from "@/actions/report.actions";
 
 // Plain WOFF, not WOFF2: fontkit's WOFF2 subsetter throws
 // "RangeError: Offset is outside the bounds of the DataView" on certain Thai
@@ -13,45 +12,40 @@ const THAI_FONT = path.join(
   "node_modules/@fontsource/sarabun/files/sarabun-thai-400-normal.woff"
 );
 
-export async function buildExcelReport(sheetName: string, rows: TransactionDetailRow[]) {
+export interface ExcelColumn<T> {
+  header: string;
+  key: string;
+  width: number;
+  /** e.g. "#,##0.00" — applied to the whole column when set. */
+  numFmt?: string;
+  value: (row: T) => string | number;
+}
+
+export interface PdfColumn<T> {
+  label: string;
+  width: number;
+  align: "left" | "right" | "center";
+  value: (row: T) => string;
+}
+
+export async function buildExcelReport<T>(
+  sheetName: string,
+  columns: ExcelColumn<T>[],
+  rows: T[]
+) {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet(sheetName);
 
-  sheet.columns = [
-    { header: "Date",         key: "date",      width: 14 },
-    { header: "Type",         key: "type",      width: 10 },
-    { header: "Product Code", key: "code",      width: 14 },
-    { header: "Product Name", key: "name",      width: 30 },
-    { header: "Quantity",     key: "quantity",  width: 10 },
-    { header: "Unit",         key: "unit",      width: 10 },
-    { header: "Unit Price",   key: "unitPrice", width: 14 },
-    { header: "Cost",         key: "cost",      width: 14 },
-    { header: "Reason",       key: "reason",    width: 18 },
-    { header: "Receiver",     key: "receiver",  width: 16 },
-    { header: "Note",         key: "note",      width: 20 },
-    { header: "Operator",     key: "operator",  width: 20 },
-  ];
+  sheet.columns = columns.map((c) => ({ header: c.header, key: c.key, width: c.width }));
   sheet.getRow(1).font = { bold: true };
 
-  for (const r of rows) {
-    sheet.addRow({
-      date:      r.createdAt.toLocaleDateString("th-TH"),
-      type:      r.type === "IN" ? "นำเข้า" : "เบิกออก",
-      code:      r.productCode,
-      name:      r.productName,
-      quantity:  r.type === "IN" ? r.quantity : -r.quantity,
-      unit:      r.unit ?? "ชิ้น",
-      unitPrice: r.unitPrice,
-      cost:      r.cost,
-      reason:    r.reason,
-      receiver:  r.receiver ?? "",
-      note:      r.note ?? "",
-      operator:  r.operator,
-    });
+  for (const row of rows) {
+    sheet.addRow(Object.fromEntries(columns.map((c) => [c.key, c.value(row)])));
   }
 
-  sheet.getColumn("unitPrice").numFmt = "#,##0.00";
-  sheet.getColumn("cost").numFmt = "#,##0.00";
+  for (const c of columns) {
+    if (c.numFmt) sheet.getColumn(c.key).numFmt = c.numFmt;
+  }
 
   return workbook.xlsx.writeBuffer();
 }
@@ -92,7 +86,12 @@ function drawText(
   });
 }
 
-export async function buildPdfReport(title: string, rows: TransactionDetailRow[]) {
+export async function buildPdfReport<T>(
+  title: string,
+  columns: PdfColumn<T>[],
+  rows: T[],
+  footer?: (rows: T[]) => string
+) {
   const doc = new PDFDocument({ margin: 36, size: "A4", layout: "landscape" });
   const chunks: Buffer[] = [];
   doc.on("data", (chunk) => chunks.push(chunk));
@@ -104,18 +103,6 @@ export async function buildPdfReport(title: string, rows: TransactionDetailRow[]
   doc.fontSize(16);
   drawText(doc, title, doc.page.margins.left, doc.y, pageWidth, "center");
   doc.moveDown(1.5);
-
-  const columns = [
-    { key: "date",      label: "Date",        width: 60,  align: "left" as const },
-    { key: "type",      label: "Type",        width: 45,  align: "center" as const },
-    { key: "code",      label: "Code",        width: 55,  align: "left" as const },
-    { key: "name",      label: "Product Name", width: 130, align: "left" as const },
-    { key: "quantity",  label: "Quantity",    width: 45,  align: "right" as const },
-    { key: "unitPrice", label: "Unit Price",  width: 65,  align: "right" as const },
-    { key: "cost",      label: "Cost",        width: 70,  align: "right" as const },
-    { key: "receiver",  label: "Receiver",    width: 80,  align: "left" as const },
-    { key: "operator",  label: "Operator",    width: 90,  align: "left" as const },
-  ];
 
   const startX = doc.page.margins.left;
   const tableWidth = columns.reduce((s, c) => s + c.width, 0);
@@ -135,47 +122,26 @@ export async function buildPdfReport(title: string, rows: TransactionDetailRow[]
 
   drawHeader();
 
-  let totalCost = 0;
-  for (const r of rows) {
+  for (const row of rows) {
     if (y > doc.page.height - doc.page.margins.bottom - 20) {
       doc.addPage();
       y = doc.page.margins.top;
       drawHeader();
     }
 
-    const values: Record<string, string> = {
-      date:      r.createdAt.toLocaleDateString("th-TH"),
-      type:      r.type === "IN" ? "นำเข้า" : "เบิกออก",
-      code:      r.productCode,
-      name:      r.productName,
-      quantity:  `${r.type === "IN" ? "+" : "-"}${r.quantity} ${r.unit ?? "ชิ้น"}`,
-      unitPrice: r.unitPrice.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-      cost:      r.cost.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-      receiver:  r.receiver ?? "-",
-      operator:  r.operator,
-    };
-
     let x = startX;
     doc.fontSize(8).fillColor("#111");
     for (const col of columns) {
-      drawText(doc, values[col.key], x, y, col.width, col.align);
+      drawText(doc, col.value(row), x, y, col.width, col.align);
       x += col.width;
     }
     y += 16;
-    totalCost += r.cost;
   }
 
   doc.moveTo(startX, y).lineTo(startX + tableWidth, y).strokeColor("#ccc").stroke();
   y += 8;
   doc.fontSize(10).fillColor("#000");
-  drawText(
-    doc,
-    `Total: ${totalCost.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} THB`,
-    startX,
-    y,
-    tableWidth,
-    "right"
-  );
+  if (footer) drawText(doc, footer(rows), startX, y, tableWidth, "right");
 
   doc.end();
   return done;

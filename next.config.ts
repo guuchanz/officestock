@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
       allowedOrigins: ["localhost:3000"],
-      bodySizeLimit: "1mb",
+      bodySizeLimit: "10mb",
     },
   },
   serverExternalPackages: ["pdfkit", "fontkit"],
