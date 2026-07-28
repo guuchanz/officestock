@@ -862,6 +862,7 @@
     "addNew": "New Project",
     "editTitle": "Edit {code}",
     "edit": "Edit",
+    "downloadReport": "Download Report",
     "delete": "Delete",
     "empty": "No projects yet",
     "itemsCount": "{count} projects",

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Pencil } from "lucide-react";
+import { Pencil, Download } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { getProject } from "@/actions/project.actions";
 import { ProjectStatusBadge, ProjectPriorityBadge } from "@/components/projects/ProjectStatusBadge";
@@ -51,6 +51,9 @@ export default async function ProjectDetailPage({
         </div>
         <div className="flex items-center gap-2">
           <ProjectStatusSelect id={project.id} status={project.status} />
+          <a href={`/api/projects/${project.id}/summary`} className="btn-primary">
+            <Download size={15} />{t("downloadReport")}
+          </a>
           <Link href={`/projects/${project.id}/edit`} className="btn-primary">
             <Pencil size={15} />{t("edit")}
           </Link>

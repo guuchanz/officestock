@@ -7,7 +7,7 @@ import path from "path";
 // composite glyphs (e.g. any string containing แ, U+0E41), which aborts PDF
 // generation before the response is written. The WOFF1 build of the same
 // font doesn't hit that subsetting bug.
-const THAI_FONT = path.join(
+export const THAI_FONT = path.join(
   process.cwd(),
   "node_modules/@fontsource/sarabun/files/sarabun-thai-400-normal.woff"
 );
@@ -55,12 +55,12 @@ export async function buildExcelReport<T>(
 // Thai runs use the embedded Sarabun font, everything else uses pdfkit's built-in Helvetica.
 const THAI_RUN = /[฀-๿]+|[^฀-๿]+/g;
 
-function splitRuns(str: string): { text: string; thai: boolean }[] {
+export function splitRuns(str: string): { text: string; thai: boolean }[] {
   const matches = str.match(THAI_RUN) ?? [str];
   return matches.map((text) => ({ text, thai: /[฀-๿]/.test(text) }));
 }
 
-function drawText(
+export function drawText(
   doc: PDFKit.PDFDocument,
   str: string,
   x: number,

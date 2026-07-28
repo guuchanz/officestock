@@ -862,6 +862,7 @@
     "addNew": "เพิ่มโครงการ",
     "editTitle": "แก้ไข {code}",
     "edit": "แก้ไข",
+    "downloadReport": "ดาวน์โหลดรายงาน",
     "delete": "ลบ",
     "empty": "ยังไม่มีโครงการ",
     "itemsCount": "{count} โครงการ",
