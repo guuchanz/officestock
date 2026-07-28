@@ -15,15 +15,22 @@ export default async function ProjectsPage({
   searchParams: Promise<{ q?: string; status?: string; priority?: string; departmentId?: string; ownerId?: string }>;
 }) {
   const params = await searchParams;
-  const [projects, departments, users, t, session] = await Promise.all([
-    getProjects(params),
+  const session = await auth();
+  const canDelete = (session?.user as any)?.role === "ADMIN";
+  const currentUserId = session?.user?.id ?? null;
+
+  // Defaults to "my projects": no ownerId in the URL means filter to the
+  // signed-in user. ?ownerId=all is the explicit escape hatch to see
+  // everyone's; a real id filters to that specific user.
+  const effectiveOwnerId =
+    params.ownerId === "all" ? null : (params.ownerId || currentUserId);
+
+  const [projects, departments, users, t] = await Promise.all([
+    getProjects({ ...params, ownerId: effectiveOwnerId ?? undefined }),
     prisma.department.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.user.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, email: true } }),
     getTranslations("Projects"),
-    auth(),
   ]);
-  const canDelete = (session?.user as any)?.role === "ADMIN";
-  const currentUserId = session?.user?.id ?? null;
 
   return (
     <div className="space-y-5">
@@ -43,6 +50,7 @@ export default async function ProjectsPage({
           departments={departments}
           owners={users.map((u) => ({ id: u.id, label: u.name ?? u.email }))}
           currentUserId={currentUserId}
+          selectedOwnerId={effectiveOwnerId}
         />
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

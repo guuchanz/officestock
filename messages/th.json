@@ -916,7 +916,8 @@
     "allDepartments": "ทุกแผนก",
     "allOwners": "ผู้รับผิดชอบทั้งหมด",
     "you": "คุณ",
-    "myProjects": "โครงการของฉัน"
+    "myProjects": "โครงการของฉัน",
+    "allProjects": "โครงการทั้งหมด"
   },
   "ProjectTimeline": {
     "noMilestones": "เพิ่มไมล์สโตนเพื่อดูไทม์ไลน์",

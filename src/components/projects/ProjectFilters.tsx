@@ -9,17 +9,23 @@ export default function ProjectFilters({
   departments,
   owners,
   currentUserId,
+  selectedOwnerId,
 }: {
   departments: { id: number; name: string }[];
   owners: { id: string; label: string }[];
   currentUserId: string | null;
+  /** Server-resolved: null means "all owners", otherwise the filtered user's
+   *  id — this already accounts for the default-to-me behaviour when the
+   *  URL has no `ownerId` at all, so the dropdown/button reflect what's
+   *  actually applied, not just the raw query string. */
+  selectedOwnerId: string | null;
 }) {
   const router = useRouter();
   const params = useSearchParams();
   const t = useTranslations("ProjectFilters");
   const tp = useTranslations("Projects");
 
-  const ownerId = params.get("ownerId") ?? "";
+  const isMine = selectedOwnerId !== null && selectedOwnerId === currentUserId;
 
   function set(key: string, value: string) {
     const next = new URLSearchParams(params.toString());
@@ -57,9 +63,9 @@ export default function ProjectFilters({
           <option key={d.id} value={d.id}>{d.name}</option>
         ))}
       </select>
-      <select className="input w-auto" value={ownerId}
-              onChange={(e) => set("ownerId", e.target.value)}>
-        <option value="">{t("allOwners")}</option>
+      <select className="input w-auto" value={selectedOwnerId ?? "all"}
+              onChange={(e) => set("ownerId", e.target.value === "all" ? "all" : e.target.value)}>
+        <option value="all">{t("allOwners")}</option>
         {owners.map((o) => (
           <option key={o.id} value={o.id}>
             {o.label}{o.id === currentUserId ? ` (${t("you")})` : ""}
@@ -69,15 +75,15 @@ export default function ProjectFilters({
       {currentUserId && (
         <button
           type="button"
-          onClick={() => set("ownerId", ownerId === currentUserId ? "" : currentUserId)}
+          onClick={() => set("ownerId", isMine ? "all" : "")}
           className={clsx(
             "rounded-lg px-3 py-2 text-sm font-medium border transition-colors",
-            ownerId === currentUserId
+            isMine
               ? "bg-[#1e3a5f] text-white border-[#1e3a5f]"
               : "text-slate-600 border-slate-200 hover:bg-slate-50"
           )}
         >
-          {t("myProjects")}
+          {isMine ? t("allProjects") : t("myProjects")}
         </button>
       )}
     </div>

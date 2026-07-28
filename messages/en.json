@@ -916,7 +916,8 @@
     "allDepartments": "All departments",
     "allOwners": "All owners",
     "you": "You",
-    "myProjects": "My Projects"
+    "myProjects": "My Projects",
+    "allProjects": "All Projects"
   },
   "ProjectTimeline": {
     "noMilestones": "Add milestones to see the timeline",
