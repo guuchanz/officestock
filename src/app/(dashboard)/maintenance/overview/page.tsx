@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HardHat, Clock, CalendarClock, CalendarCheck, CheckCircle2, Wallet } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { getMaintenanceDashboardStats, getEquipmentList } from "@/actions/equipment.actions";
 import { DUE_SOON_DAYS } from "@/lib/maintenance-constants";
@@ -17,12 +18,12 @@ export default async function MaintenanceOverviewPage() {
     n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const cards = [
-    { key: "total",     value: String(stats.total),     tone: "text-slate-900" },
-    { key: "overdue",   value: String(stats.overdue),   tone: stats.overdue > 0 ? "text-red-600" : "text-slate-900" },
-    { key: "dueSoon",   value: String(stats.dueSoon),   tone: stats.dueSoon > 0 ? "text-amber-600" : "text-slate-900" },
-    { key: "scheduled", value: String(stats.scheduled), tone: "text-emerald-600" },
-    { key: "doneMonth", value: String(stats.doneThisMonth), tone: "text-slate-900" },
-    { key: "monthCost", value: money(stats.monthCost),  tone: "text-slate-900" },
+    { key: "total",     value: String(stats.total),     icon: HardHat,      tone: "text-[#1e3a5f]" },
+    { key: "overdue",   value: String(stats.overdue),   icon: Clock,        tone: stats.overdue > 0 ? "text-red-600" : "text-slate-900" },
+    { key: "dueSoon",   value: String(stats.dueSoon),   icon: CalendarClock, tone: stats.dueSoon > 0 ? "text-amber-600" : "text-slate-900" },
+    { key: "scheduled", value: String(stats.scheduled), icon: CalendarCheck, tone: "text-emerald-600" },
+    { key: "doneMonth", value: String(stats.doneThisMonth), icon: CheckCircle2, tone: "text-slate-900" },
+    { key: "monthCost", value: money(stats.monthCost),  icon: Wallet,       tone: "text-slate-900" },
   ];
 
   return (
@@ -33,12 +34,18 @@ export default async function MaintenanceOverviewPage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        {cards.map((c) => (
-          <div key={c.key} className="card p-5">
-            <p className="text-xs uppercase tracking-wide text-slate-400">{t(`card_${c.key}`)}</p>
-            <p className={`mt-1 text-2xl font-bold ${c.tone}`}>{c.value}</p>
-          </div>
-        ))}
+        {cards.map((c) => {
+          const Icon = c.icon;
+          return (
+            <div key={c.key} className="card p-5 flex items-center gap-3">
+              <Icon size={22} className={c.tone} />
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-400">{t(`card_${c.key}`)}</p>
+                <p className={`mt-1 text-2xl font-bold ${c.tone}`}>{c.value}</p>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="card overflow-hidden">
