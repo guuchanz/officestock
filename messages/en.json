@@ -906,7 +906,7 @@
     "status": "Status",
     "priority": "Priority",
     "budget": "Budget",
-    "atRisk": "Flag this project as at risk",
+    "atRisk": "Flag this project as Important",
     "none": "— None —",
     "save": "Save",
     "saving": "Saving..."
