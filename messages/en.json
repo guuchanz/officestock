@@ -59,10 +59,7 @@
     "totalProducts": "Total Products",
     "lowStock": "Low Stock",
     "importedToday": "Imported Today",
-    "withdrawnToday": "Withdrawn Today",
-    "openRepairs": "Open repairs",
-    "overdueRepairs": "Overdue repairs",
-    "overdueMaintenance": "Overdue PM"
+    "withdrawnToday": "Withdrawn Today"
   },
   "StockTable": {
     "title": "Inventory List",

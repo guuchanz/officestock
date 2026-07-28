@@ -59,10 +59,7 @@
     "totalProducts": "สินค้าทั้งหมด",
     "lowStock": "สต็อกใกล้หมด",
     "importedToday": "นำเข้าวันนี้",
-    "withdrawnToday": "เบิกออกวันนี้",
-    "openRepairs": "งานซ่อมค้าง",
-    "overdueRepairs": "งานซ่อมเกินกำหนด",
-    "overdueMaintenance": "บำรุงรักษาเกินกำหนด"
+    "withdrawnToday": "เบิกออกวันนี้"
   },
   "StockTable": {
     "title": "รายการสินค้าคงคลัง",
