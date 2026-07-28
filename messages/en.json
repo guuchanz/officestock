@@ -26,7 +26,12 @@
     "maintNew": "Add Equipment",
     "factories": "Factories",
     "areas": "Areas",
-    "maintReports": "PM Reports"
+    "maintReports": "PM Reports",
+    "moduleProject": "Projects",
+    "projectOverview": "Overview",
+    "projectList": "Project List",
+    "projectNew": "New Project",
+    "projectReports": "Reports"
   },
   "Header": {
     "defaultUser": "User",

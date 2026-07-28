@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, History, Package, FileBarChart, Building2,
   Users, FileText, Tags, Wrench, ClipboardList, PlusCircle, UserCog,
-  CalendarClock, HardHat, Factory, MapPin,
+  CalendarClock, HardHat, Factory, MapPin, FolderKanban,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -14,7 +14,7 @@ export interface NavItem {
 }
 
 export interface NavModule {
-  key: "stock" | "repair" | "maintenance";
+  key: "stock" | "repair" | "maintenance" | "project";
   labelKey: string;
   href: string;
   icon: LucideIcon;
@@ -67,6 +67,18 @@ export const MODULES: NavModule[] = [
       { href: "/maintenance/factories", key: "factories",      icon: Factory },
       { href: "/maintenance/areas",     key: "areas",          icon: MapPin },
       { href: "/maintenance/reports",   key: "maintReports",   icon: FileBarChart },
+    ],
+  },
+  {
+    key: "project",
+    labelKey: "moduleProject",
+    href: "/projects/overview",
+    icon: FolderKanban,
+    items: [
+      { href: "/projects/overview", key: "projectOverview", icon: LayoutDashboard },
+      { href: "/projects",          key: "projectList",     icon: FolderKanban },
+      { href: "/projects/new",      key: "projectNew",      icon: PlusCircle },
+      { href: "/projects/reports",  key: "projectReports",  icon: FileBarChart },
     ],
   },
 ];

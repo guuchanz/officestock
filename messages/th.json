@@ -26,7 +26,12 @@
     "maintNew": "เพิ่มอุปกรณ์",
     "factories": "โรงงาน",
     "areas": "พื้นที่",
-    "maintReports": "รายงานบำรุงรักษา"
+    "maintReports": "รายงานบำรุงรักษา",
+    "moduleProject": "โครงการ",
+    "projectOverview": "ภาพรวม",
+    "projectList": "รายการโครงการ",
+    "projectNew": "เพิ่มโครงการ",
+    "projectReports": "รายงาน"
   },
   "Header": {
     "defaultUser": "ผู้ใช้",
