@@ -38,7 +38,7 @@
     "logout": "Log out"
   },
   "Login": {
-    "subtitle": "Office Equipment Stock Management System",
+    "subtitle": "Stock, Repair, Maintenance & Project Management",
     "invalidCredentials": "Invalid email or password",
     "emailLabel": "Email",
     "passwordLabel": "Password",
