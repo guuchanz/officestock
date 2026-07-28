@@ -26,7 +26,7 @@ export default function Sidebar({ canManageUsers }: SidebarProps) {
         <ModIcon size={22} className="text-blue-200" />
         <div>
           <p className="font-bold text-sm leading-tight">{t(mod.labelKey)}</p>
-          <p className="text-[11px] text-blue-200">IT Asset Management</p>
+          <p className="text-[11px] text-blue-200">Management System</p>
         </div>
       </div>
 
