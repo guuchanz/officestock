@@ -913,7 +913,10 @@
     "searchPlaceholder": "ค้นหาชื่อหรือรหัส...",
     "allStatuses": "ทุกสถานะ",
     "allPriorities": "ทุกความสำคัญ",
-    "allDepartments": "ทุกแผนก"
+    "allDepartments": "ทุกแผนก",
+    "allOwners": "ผู้รับผิดชอบทั้งหมด",
+    "you": "คุณ",
+    "myProjects": "โครงการของฉัน"
   },
   "ProjectTimeline": {
     "noMilestones": "เพิ่มไมล์สโตนเพื่อดูไทม์ไลน์",

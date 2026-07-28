@@ -262,6 +262,7 @@ export async function getProjects(filters: {
   status?: string;
   priority?: string;
   departmentId?: string;
+  ownerId?: string;
 }): Promise<ProjectListRow[]> {
   const where: any = {};
 
@@ -281,6 +282,7 @@ export async function getProjects(filters: {
   }
   const deptId = Number(filters.departmentId);
   if (Number.isInteger(deptId) && deptId > 0) where.departmentId = deptId;
+  if (filters.ownerId?.trim()) where.ownerId = filters.ownerId.trim();
 
   const rows = await prisma.project.findMany({
     where,

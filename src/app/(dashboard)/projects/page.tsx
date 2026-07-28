@@ -12,16 +12,18 @@ export const revalidate = 0;
 export default async function ProjectsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string; priority?: string; departmentId?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; priority?: string; departmentId?: string; ownerId?: string }>;
 }) {
   const params = await searchParams;
-  const [projects, departments, t, session] = await Promise.all([
+  const [projects, departments, users, t, session] = await Promise.all([
     getProjects(params),
     prisma.department.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.user.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, email: true } }),
     getTranslations("Projects"),
     auth(),
   ]);
   const canDelete = (session?.user as any)?.role === "ADMIN";
+  const currentUserId = session?.user?.id ?? null;
 
   return (
     <div className="space-y-5">
@@ -37,7 +39,11 @@ export default async function ProjectsPage({
       </div>
 
       <div className="card overflow-hidden">
-        <ProjectFilters departments={departments} />
+        <ProjectFilters
+          departments={departments}
+          owners={users.map((u) => ({ id: u.id, label: u.name ?? u.email }))}
+          currentUserId={currentUserId}
+        />
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

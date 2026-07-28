@@ -913,7 +913,10 @@
     "searchPlaceholder": "Search name or code...",
     "allStatuses": "All statuses",
     "allPriorities": "All priorities",
-    "allDepartments": "All departments"
+    "allDepartments": "All departments",
+    "allOwners": "All owners",
+    "you": "You",
+    "myProjects": "My Projects"
   },
   "ProjectTimeline": {
     "noMilestones": "Add milestones to see the timeline",
