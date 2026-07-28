@@ -82,6 +82,7 @@ export default async function ProjectDetailPage({
         <h2 className="font-semibold text-slate-900">{t("sectionDetails")}</h2>
         <dl className="grid gap-3 sm:grid-cols-3 text-sm">
           <div><dt className="text-slate-500">{t("colDepartment")}</dt><dd>{project.departmentName ?? "-"}</dd></div>
+          <div><dt className="text-slate-500">{t("colRequestor")}</dt><dd>{project.requestor ?? "-"}</dd></div>
           <div><dt className="text-slate-500">{t("colOwner")}</dt><dd>{project.ownerName ?? "-"}</dd></div>
           <div><dt className="text-slate-500">{t("colStartDate")}</dt><dd>{project.startDate.toLocaleDateString("th-TH")}</dd></div>
           <div><dt className="text-slate-500">{t("colDueDate")}</dt><dd>{project.dueDate?.toLocaleDateString("th-TH") ?? "-"}</dd></div>

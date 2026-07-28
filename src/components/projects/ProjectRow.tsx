@@ -41,6 +41,7 @@ export default function ProjectRow({
         )}
       </td>
       <td className="px-4 py-3 text-slate-500">{project.departmentName ?? "-"}</td>
+      <td className="px-4 py-3 text-slate-500">{project.requestor ?? "-"}</td>
       <td className="px-4 py-3 text-slate-500">{project.ownerName ?? "-"}</td>
       <td className="px-4 py-3"><ProjectPriorityBadge priority={project.priority} /></td>
       <td className="px-4 py-3"><ProjectStatusBadge status={project.status} /></td>

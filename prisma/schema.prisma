@@ -437,8 +437,13 @@ model Project {
   department   Department? @relation(fields: [departmentId], references: [id])
   departmentId Int?
 
-  /// The person responsible for delivery. Nullable so a project can be
-  /// created before an owner is decided.
+  /// Who asked for the project. Free text rather than a User relation: the
+  /// requester is often someone without a login account, matching how the
+  /// repair module stores `ownerName`.
+  requestor String?
+
+  /// The person responsible for delivery. Set to the signed-in user when the
+  /// project is created and never changed by the edit form.
   owner   User?   @relation("ProjectOwner", fields: [ownerId], references: [id])
   ownerId String?
 

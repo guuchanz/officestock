@@ -19,13 +19,15 @@ function isoDate(d: Date | null): string {
   return x.toISOString().slice(0, 10);
 }
 
+/**
+ * There is no owner field: the owner is the signed-in user, set server-side
+ * on create and never reassigned by an edit.
+ */
 export default function ProjectForm({
   departments,
-  users,
   project,
 }: {
   departments: { id: number; name: string }[];
-  users: { id: string; label: string }[];
   project?: ProjectDetail;
 }) {
   const t = useTranslations("ProjectForm");
@@ -87,11 +89,10 @@ export default function ProjectForm({
           </select>
         </div>
         <div>
-          <label className="label" htmlFor="ownerId">{t("owner")}</label>
-          <select id="ownerId" name="ownerId" className="input" defaultValue={project?.ownerId ?? ""}>
-            <option value="">{t("none")}</option>
-            {users.map((u) => <option key={u.id} value={u.id}>{u.label}</option>)}
-          </select>
+          <label className="label" htmlFor="requestor">{t("requestor")}</label>
+          <input id="requestor" name="requestor" className="input"
+                 placeholder={t("requestorPlaceholder")}
+                 defaultValue={project?.requestor ?? ""} />
         </div>
       </div>
 

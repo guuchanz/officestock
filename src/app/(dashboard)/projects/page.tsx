@@ -45,6 +45,7 @@ export default async function ProjectsPage({
                 <th className="px-5 py-3 font-medium">{t("colCode")}</th>
                 <th className="px-4 py-3 font-medium">{t("colName")}</th>
                 <th className="px-4 py-3 font-medium">{t("colDepartment")}</th>
+                <th className="px-4 py-3 font-medium">{t("colRequestor")}</th>
                 <th className="px-4 py-3 font-medium">{t("colOwner")}</th>
                 <th className="px-4 py-3 font-medium">{t("colPriority")}</th>
                 <th className="px-4 py-3 font-medium">{t("colStatus")}</th>
@@ -60,7 +61,7 @@ export default async function ProjectsPage({
               ))}
               {projects.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-5 py-10 text-center text-slate-400">
+                  <td colSpan={11} className="px-5 py-10 text-center text-slate-400">
                     {t("empty")}
                   </td>
                 </tr>

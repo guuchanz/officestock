@@ -22,7 +22,7 @@ async function buildProjectSchema() {
       name:         z.string().min(1, t("nameRequired")),
       details:      z.string().optional(),
       departmentId: z.number().int().positive().optional(),
-      ownerId:      z.string().optional(),
+      requestor:    z.string().optional(),
       status:       z.nativeEnum(ProjectStatus),
       priority:     z.nativeEnum(ProjectPriority),
       atRisk:       z.boolean(),
@@ -54,7 +54,7 @@ function readProjectForm(formData: FormData) {
     name:         formData.get("name") ?? "",
     details:      str("details"),
     departmentId: num("departmentId"),
-    ownerId:      str("ownerId"),
+    requestor:    str("requestor"),
     status:       formData.get("status") ?? ProjectStatus.PLANNING,
     priority:     formData.get("priority") ?? ProjectPriority.MEDIUM,
     atRisk:       formData.get("atRisk") === "on",
@@ -92,7 +92,9 @@ export async function createProjectAction(
         name:         d.name,
         details:      d.details ?? null,
         departmentId: d.departmentId ?? null,
-        ownerId:      d.ownerId ?? null,
+        requestor:    d.requestor ?? null,
+        // Owner is always the signed-in user; there is no form field for it.
+        ownerId:      userId,
         status:       d.status,
         priority:     d.priority,
         atRisk:       d.atRisk,
@@ -144,7 +146,9 @@ export async function updateProjectAction(
       name:         d.name,
       details:      d.details ?? null,
       departmentId: d.departmentId ?? null,
-      ownerId:      d.ownerId ?? null,
+      requestor:    d.requestor ?? null,
+      // ownerId is deliberately absent: editing a project must not reassign
+      // it to whoever happens to be editing.
       status:       d.status,
       priority:     d.priority,
       atRisk:       d.atRisk,
@@ -249,6 +253,7 @@ export type ProjectListRow = {
   budget: number;
   actualCost: number;
   departmentName: string | null;
+  requestor: string | null;
   ownerName: string | null;
 };
 
@@ -301,6 +306,7 @@ export async function getProjects(filters: {
     budget: Number(r.budget),
     actualCost: Number(r.actualCost),
     departmentName: r.department?.name ?? null,
+    requestor: r.requestor,
     ownerName: r.owner?.name ?? r.owner?.email ?? null,
   }));
 }
@@ -360,6 +366,7 @@ export async function getProject(id: number): Promise<ProjectDetail | null> {
     actualCost: Number(r.actualCost),
     departmentId: r.departmentId,
     departmentName: r.department?.name ?? null,
+    requestor: r.requestor,
     ownerId: r.ownerId,
     ownerName: r.owner?.name ?? r.owner?.email ?? null,
     milestones: r.milestones.map((m) => ({

@@ -15,10 +15,9 @@ export default async function EditProjectPage({
   const projectId = Number(id);
   if (!Number.isInteger(projectId)) notFound();
 
-  const [project, departments, users, t] = await Promise.all([
+  const [project, departments, t] = await Promise.all([
     getProject(projectId),
     prisma.department.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    prisma.user.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, email: true } }),
     getTranslations("Projects"),
   ]);
   if (!project) notFound();
@@ -26,11 +25,7 @@ export default async function EditProjectPage({
   return (
     <div className="space-y-5">
       <h1 className="text-xl font-bold text-slate-900">{t("editTitle", { code: project.code })}</h1>
-      <ProjectForm
-        departments={departments}
-        users={users.map((u) => ({ id: u.id, label: u.name ?? u.email }))}
-        project={project}
-      />
+      <ProjectForm departments={departments} project={project} />
     </div>
   );
 }

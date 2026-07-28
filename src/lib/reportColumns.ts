@@ -171,6 +171,7 @@ export const PROJECT_EXCEL_COLUMNS: ExcelColumn<ProjectReportRow>[] = [
   { header: "Code",        key: "code",       width: 16, value: (r) => r.code },
   { header: "Project",     key: "name",       width: 32, value: (r) => r.name },
   { header: "Department",  key: "department", width: 18, value: (r) => r.department },
+  { header: "Requestor",   key: "requestor",  width: 20, value: (r) => r.requestor },
   { header: "Owner",       key: "owner",      width: 20, value: (r) => r.owner },
   { header: "Status",      key: "status",     width: 14, value: (r) => r.status },
   { header: "Priority",    key: "priority",   width: 10, value: (r) => r.priority },

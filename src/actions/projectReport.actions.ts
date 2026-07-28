@@ -7,6 +7,7 @@ export type ProjectReportRow = {
   code: string;
   name: string;
   department: string;
+  requestor: string;
   owner: string;
   status: ProjectStatus;
   priority: string;
@@ -62,6 +63,7 @@ export async function getProjectReport(
       code: p.code,
       name: p.name,
       department: p.department?.name ?? "-",
+      requestor: p.requestor ?? "-",
       owner: p.owner?.name ?? p.owner?.email ?? "-",
       status: p.status,
       priority: p.priority,
