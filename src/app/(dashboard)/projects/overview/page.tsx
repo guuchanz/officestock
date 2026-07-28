@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { getProjectStats, getProjects } from "@/actions/project.actions";
 import { ProjectStatusBadge } from "@/components/projects/ProjectStatusBadge";
 import ProgressBar from "@/components/projects/ProgressBar";
+import MetricCard from "@/components/dashboard/MetricCard";
 
 export const revalidate = 0;
 
@@ -26,11 +27,14 @@ export default async function ProjectOverviewPage() {
       (p.atRisk || (p.dueDate !== null && p.dueDate < today))
   );
 
+  // "overdue" mirrors the stock dashboard's overdueMaintenance card (both are
+  // due-date driven); "atRisk" copies the icon+color of stock's lowStock
+  // card exactly, since both mean "needs attention now".
   const cards = [
-    { key: "open",         value: String(stats.open),         icon: FolderKanban,  tone: "text-[#1e3a5f]" },
-    { key: "overdue",      value: String(stats.overdue),      icon: CalendarClock, tone: "text-red-600" },
-    { key: "atRisk",       value: String(stats.atRisk),       icon: AlertTriangle, tone: "text-orange-600" },
-    { key: "doneThisYear", value: String(stats.doneThisYear), icon: CheckCircle2,  tone: "text-emerald-600" },
+    { key: "open",         value: String(stats.open),         icon: FolderKanban,  color: "indigo" as const },
+    { key: "overdue",      value: String(stats.overdue),      icon: CalendarClock, color: "amber" as const },
+    { key: "atRisk",       value: String(stats.atRisk),       icon: AlertTriangle, color: "rose" as const },
+    { key: "doneThisYear", value: String(stats.doneThisYear), icon: CheckCircle2,  color: "emerald" as const },
   ];
 
   return (
@@ -38,18 +42,15 @@ export default async function ProjectOverviewPage() {
       <h1 className="text-xl font-bold text-slate-900">{t("title")}</h1>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map((c) => {
-          const Icon = c.icon;
-          return (
-            <div key={c.key} className="card p-4 flex items-center gap-3">
-              <Icon size={22} className={c.tone} />
-              <div>
-                <p className="text-xs text-slate-500">{t(c.key)}</p>
-                <p className="text-xl font-bold text-slate-900">{c.value}</p>
-              </div>
-            </div>
-          );
-        })}
+        {cards.map((c) => (
+          <MetricCard
+            key={c.key}
+            label={t(c.key)}
+            value={c.value}
+            icon={<c.icon size={20} />}
+            color={c.color}
+          />
+        ))}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

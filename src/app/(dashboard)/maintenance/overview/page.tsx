@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { getMaintenanceDashboardStats, getEquipmentList } from "@/actions/equipment.actions";
 import { DUE_SOON_DAYS } from "@/lib/maintenance-constants";
 import DueBadge from "@/components/maintenance/DueBadge";
+import MetricCard from "@/components/dashboard/MetricCard";
 
 export const revalidate = 0;
 
@@ -17,13 +18,16 @@ export default async function MaintenanceOverviewPage() {
   const money = (n: number) =>
     n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+  // "overdue" matches the stock dashboard's overdueMaintenance card exactly
+  // (same icon, same color), so the same metric reads identically in both
+  // places.
   const cards = [
-    { key: "total",     value: String(stats.total),     icon: HardHat,      tone: "text-[#1e3a5f]" },
-    { key: "overdue",   value: String(stats.overdue),   icon: Clock,        tone: stats.overdue > 0 ? "text-red-600" : "text-slate-900" },
-    { key: "dueSoon",   value: String(stats.dueSoon),   icon: CalendarClock, tone: stats.dueSoon > 0 ? "text-amber-600" : "text-slate-900" },
-    { key: "scheduled", value: String(stats.scheduled), icon: CalendarCheck, tone: "text-emerald-600" },
-    { key: "doneMonth", value: String(stats.doneThisMonth), icon: CheckCircle2, tone: "text-slate-900" },
-    { key: "monthCost", value: money(stats.monthCost),  icon: Wallet,       tone: "text-slate-900" },
+    { key: "total",     value: String(stats.total),     icon: HardHat,       color: "indigo" as const },
+    { key: "overdue",   value: String(stats.overdue),   icon: CalendarClock, color: "amber" as const },
+    { key: "dueSoon",   value: String(stats.dueSoon),   icon: Clock,         color: "indigo" as const },
+    { key: "scheduled", value: String(stats.scheduled), icon: CalendarCheck, color: "emerald" as const },
+    { key: "doneMonth", value: String(stats.doneThisMonth), icon: CheckCircle2, color: "emerald" as const },
+    { key: "monthCost", value: money(stats.monthCost),  icon: Wallet,        color: "amber" as const },
   ];
 
   return (
@@ -34,18 +38,15 @@ export default async function MaintenanceOverviewPage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        {cards.map((c) => {
-          const Icon = c.icon;
-          return (
-            <div key={c.key} className="card p-5 flex items-center gap-3">
-              <Icon size={22} className={c.tone} />
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-400">{t(`card_${c.key}`)}</p>
-                <p className={`mt-1 text-2xl font-bold ${c.tone}`}>{c.value}</p>
-              </div>
-            </div>
-          );
-        })}
+        {cards.map((c) => (
+          <MetricCard
+            key={c.key}
+            label={t(`card_${c.key}`)}
+            value={c.value}
+            icon={<c.icon size={20} />}
+            color={c.color}
+          />
+        ))}
       </div>
 
       <div className="card overflow-hidden">
