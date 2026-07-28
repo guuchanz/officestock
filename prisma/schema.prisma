@@ -24,6 +24,10 @@ model User {
   maintenanceLogs    MaintenanceLog[]
   equipmentDocuments EquipmentDocument[]
   quotationFiles     QuotationFile[]
+  projects           Project[]           @relation("ProjectCreatedBy")
+  ownedProjects      Project[]           @relation("ProjectOwner")
+  projectUpdates     ProjectUpdate[]
+  projectAttachments ProjectAttachment[]
   accounts           Account[]
   sessions           Session[]
   createdAt          DateTime            @default(now())
@@ -75,6 +79,7 @@ model Department {
   name         String             @unique
   transactions StockTransaction[]
   repairJobs   RepairJob[]
+  projects     Project[]
   createdAt    DateTime           @default(now())
 }
 
@@ -403,4 +408,130 @@ model QuotationFile {
   createdAt    DateTime @default(now())
 
   @@index([quotationId])
+}
+
+// ---------------------------------------------------------------------------
+// Project Manager module
+// ---------------------------------------------------------------------------
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  ON_HOLD
+  DONE
+  CANCELLED
+}
+
+enum ProjectPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Project {
+  id      Int     @id @default(autoincrement())
+  code    String  @unique
+  name    String
+  details String? @db.Text
+
+  department   Department? @relation(fields: [departmentId], references: [id])
+  departmentId Int?
+
+  /// The person responsible for delivery. Nullable so a project can be
+  /// created before an owner is decided.
+  owner   User?   @relation("ProjectOwner", fields: [ownerId], references: [id])
+  ownerId String?
+
+  status   ProjectStatus   @default(PLANNING)
+  priority ProjectPriority @default(MEDIUM)
+
+  /// Manual flag, set by a human who knows the project is in trouble even
+  /// when the dates still look fine.
+  atRisk Boolean @default(false)
+
+  startDate  DateTime
+  /// Planned finish. Compared against `finishedAt` to report late delivery.
+  dueDate    DateTime?
+  /// Actual finish. Stamped when status becomes DONE, cleared on reopen.
+  finishedAt DateTime?
+
+  budget Decimal @default(0) @db.Decimal(12, 2)
+  /// Derived: sum(updates.cost). Stored because the reports aggregate it in SQL.
+  actualCost Decimal @default(0) @db.Decimal(12, 2)
+  /// Derived: done milestones / total milestones, 0-100. Stored so the list
+  /// can sort and filter without loading every milestone row.
+  progress Int @default(0)
+
+  milestones  ProjectMilestone[]
+  updates     ProjectUpdate[]
+  attachments ProjectAttachment[]
+
+  createdBy   User   @relation("ProjectCreatedBy", fields: [createdById], references: [id])
+  createdById String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([startDate])
+}
+
+model ProjectMilestone {
+  id        Int     @id @default(autoincrement())
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId Int
+
+  name      String
+  startDate DateTime?
+  endDate   DateTime?
+  isDone    Boolean   @default(false)
+  doneAt    DateTime?
+  /// Display order. Milestones are a plan, not a chronology.
+  sortOrder Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+}
+
+model ProjectUpdate {
+  id        Int     @id @default(autoincrement())
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId Int
+
+  note String  @db.Text
+  /// Money spent, explained by `note`. Rolls up into Project.actualCost.
+  cost Decimal @default(0) @db.Decimal(12, 2)
+
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdById String
+  createdAt   DateTime @default(now())
+
+  attachments ProjectAttachment[]
+
+  @@index([projectId])
+}
+
+model ProjectAttachment {
+  id        Int     @id @default(autoincrement())
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId Int
+
+  /// Set when the file arrived with an update-log entry; null for
+  /// project-level documents. One table so upload, list and delete are shared.
+  update   ProjectUpdate? @relation(fields: [updateId], references: [id], onDelete: Cascade)
+  updateId Int?
+
+  /// Human label typed by the uploader, as in RepairAttachment — keeps the
+  /// list readable when the file is called "IMG_4471.jpg".
+  docName      String @default("")
+  fileUrl      String
+  fileName     String
+  mimeType     String
+  uploadedBy   User   @relation(fields: [uploadedById], references: [id])
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  @@index([projectId])
+  @@index([updateId])
 }
