@@ -856,5 +856,28 @@
     "removeFile": "เอาไฟล์นี้ออก",
     "filesSelected": "{count, plural, other {เตรียมอัปโหลด # ไฟล์}}",
     "hint": "PDF เท่านั้น — เลือกได้มากกว่า 1 ไฟล์"
+  },
+  "ProjectActions": {
+    "loginRequired": "กรุณาเข้าสู่ระบบก่อน",
+    "forbidden": "เฉพาะผู้ดูแลระบบเท่านั้น",
+    "invalidData": "กรุณาตรวจสอบข้อมูล",
+    "notFound": "ไม่พบโครงการ",
+    "nameRequired": "กรุณากรอกชื่อโครงการ",
+    "startDateRequired": "กรุณาระบุวันเริ่ม",
+    "budgetInvalid": "งบประมาณต้องไม่ติดลบ",
+    "dueBeforeStart": "กำหนดเสร็จต้องไม่ก่อนวันเริ่ม",
+    "endBeforeStart": "วันสิ้นสุดต้องไม่ก่อนวันเริ่ม",
+    "milestoneNameRequired": "กรุณากรอกชื่อไมล์สโตน",
+    "noteRequired": "กรุณากรอกรายละเอียด",
+    "noFiles": "กรุณาเลือกไฟล์อย่างน้อย 1 ไฟล์",
+    "fileTypeError": "รองรับเฉพาะไฟล์ PDF",
+    "fileTooLarge": "ไฟล์ต้องมีขนาดไม่เกิน 10MB",
+    "illegalTransition": "ไม่สามารถเปลี่ยนสถานะแบบนี้ได้",
+    "createSuccess": "สร้างโครงการแล้ว",
+    "updateSuccess": "บันทึกแล้ว",
+    "deleteSuccess": "ลบแล้ว",
+    "milestoneAdded": "เพิ่มไมล์สโตนแล้ว",
+    "updateAdded": "บันทึกความคืบหน้าแล้ว",
+    "filesAdded": "อัปโหลดไฟล์แล้ว"
   }
 }

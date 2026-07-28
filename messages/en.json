@@ -856,5 +856,28 @@
     "removeFile": "Remove this file",
     "filesSelected": "{count, plural, one {# file ready to upload} other {# files ready to upload}}",
     "hint": "PDF only — you can select more than one file"
+  },
+  "ProjectActions": {
+    "loginRequired": "Please sign in first",
+    "forbidden": "Administrators only",
+    "invalidData": "Please check the form",
+    "notFound": "Project not found",
+    "nameRequired": "Project name is required",
+    "startDateRequired": "Start date is required",
+    "budgetInvalid": "Budget must be zero or more",
+    "dueBeforeStart": "Due date cannot be before the start date",
+    "endBeforeStart": "End date cannot be before the start date",
+    "milestoneNameRequired": "Milestone name is required",
+    "noteRequired": "Update note is required",
+    "noFiles": "Choose at least one file",
+    "fileTypeError": "PDF files only",
+    "fileTooLarge": "File must be smaller than 10MB",
+    "illegalTransition": "That status change is not allowed",
+    "createSuccess": "Project created",
+    "updateSuccess": "Saved",
+    "deleteSuccess": "Deleted",
+    "milestoneAdded": "Milestone added",
+    "updateAdded": "Update posted",
+    "filesAdded": "Files uploaded"
   }
 }
