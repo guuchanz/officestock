@@ -2,6 +2,7 @@ import type { TransactionDetailRow } from "@/actions/report.actions";
 import type { ExcelColumn, PdfColumn } from "./reportExport";
 import type { RepairReportRow } from "@/actions/repairReport.actions";
 import type { MaintHistoryRow, MaintDueRow } from "@/actions/maintenanceReport.actions";
+import type { ProjectReportRow } from "@/actions/projectReport.actions";
 
 const money = (n: number) =>
   n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -165,3 +166,19 @@ export function maintDueFooter(rows: MaintDueRow[]) {
   const soon = rows.filter((r) => r.bucket === "DUE_SOON").length;
   return `Equipment: ${rows.length}   Overdue: ${overdue}   Due soon: ${soon}`;
 }
+
+export const PROJECT_EXCEL_COLUMNS: ExcelColumn<ProjectReportRow>[] = [
+  { header: "Code",        key: "code",       width: 16, value: (r) => r.code },
+  { header: "Project",     key: "name",       width: 32, value: (r) => r.name },
+  { header: "Department",  key: "department", width: 18, value: (r) => r.department },
+  { header: "Owner",       key: "owner",      width: 20, value: (r) => r.owner },
+  { header: "Status",      key: "status",     width: 14, value: (r) => r.status },
+  { header: "Priority",    key: "priority",   width: 10, value: (r) => r.priority },
+  { header: "Start",       key: "start",      width: 14, value: (r) => r.startDate.toLocaleDateString("th-TH") },
+  { header: "Due",         key: "due",        width: 14, value: (r) => r.dueDate?.toLocaleDateString("th-TH") ?? "" },
+  { header: "Finished",    key: "finished",   width: 14, value: (r) => r.finishedAt?.toLocaleDateString("th-TH") ?? "" },
+  { header: "Days Late",   key: "daysLate",   width: 11, value: (r) => r.daysLate ?? "" },
+  { header: "Budget",      key: "budget",     width: 14, numFmt: "#,##0.00", value: (r) => r.budget },
+  { header: "Actual",      key: "actual",     width: 14, numFmt: "#,##0.00", value: (r) => r.actualCost },
+  { header: "Variance",    key: "variance",   width: 14, numFmt: "#,##0.00", value: (r) => r.variance },
+];
