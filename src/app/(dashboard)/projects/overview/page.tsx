@@ -2,19 +2,35 @@ import Link from "next/link";
 import { AlertTriangle, CalendarClock, FolderKanban, CheckCircle2 } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { getProjectStats, getProjects } from "@/actions/project.actions";
+import { auth } from "@/lib/auth";
 import { ProjectStatusBadge } from "@/components/projects/ProjectStatusBadge";
 import ProgressBar from "@/components/projects/ProgressBar";
 import MetricCard from "@/components/dashboard/MetricCard";
+import OwnerScopeToggle from "@/components/projects/OwnerScopeToggle";
 
 export const revalidate = 0;
 
 const money = (n: number) =>
   n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export default async function ProjectOverviewPage() {
+export default async function ProjectOverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ownerId?: string }>;
+}) {
+  const params = await searchParams;
+  const session = await auth();
+  const currentUserId = session?.user?.id ?? null;
+
+  // Same default-to-me behaviour as the project list: no ownerId in the URL
+  // means "my projects"; ?ownerId=all is the explicit way to see everyone's.
+  const effectiveOwnerId =
+    params.ownerId === "all" ? null : (params.ownerId || currentUserId);
+  const isMine = effectiveOwnerId !== null && effectiveOwnerId === currentUserId;
+
   const [stats, all, t] = await Promise.all([
-    getProjectStats(),
-    getProjects({}),
+    getProjectStats({ ownerId: effectiveOwnerId ?? undefined }),
+    getProjects({ ownerId: effectiveOwnerId ?? undefined }),
     getTranslations("ProjectOverview"),
   ]);
 
@@ -39,7 +55,10 @@ export default async function ProjectOverviewPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-xl font-bold text-slate-900">{t("title")}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-slate-900">{t("title")}</h1>
+        {currentUserId && <OwnerScopeToggle isMine={isMine} basePath="/projects/overview" />}
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((c) => (

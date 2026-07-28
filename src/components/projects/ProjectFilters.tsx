@@ -2,8 +2,8 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { clsx } from "clsx";
 import { PROJECT_STATUSES, PROJECT_PRIORITIES } from "@/lib/project-constants";
+import OwnerScopeToggle from "./OwnerScopeToggle";
 
 export default function ProjectFilters({
   departments,
@@ -72,20 +72,7 @@ export default function ProjectFilters({
           </option>
         ))}
       </select>
-      {currentUserId && (
-        <button
-          type="button"
-          onClick={() => set("ownerId", isMine ? "all" : "")}
-          className={clsx(
-            "rounded-lg px-3 py-2 text-sm font-medium border transition-colors",
-            isMine
-              ? "bg-[#1e3a5f] text-white border-[#1e3a5f]"
-              : "text-slate-600 border-slate-200 hover:bg-slate-50"
-          )}
-        >
-          {isMine ? t("allProjects") : t("myProjects")}
-        </button>
-      )}
+      {currentUserId && <OwnerScopeToggle isMine={isMine} basePath="/projects" />}
     </div>
   );
 }

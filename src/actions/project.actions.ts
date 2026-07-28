@@ -396,22 +396,23 @@ export type ProjectStats = {
   actualTotal: number;
 };
 
-export async function getProjectStats(): Promise<ProjectStats> {
+export async function getProjectStats(filters: { ownerId?: string } = {}): Promise<ProjectStats> {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const yearStart = new Date(today.getFullYear(), 0, 1);
+  const owner = filters.ownerId?.trim() ? { ownerId: filters.ownerId.trim() } : {};
 
   const [open, overdue, atRisk, doneThisYear, sums] = await Promise.all([
-    prisma.project.count({ where: { status: { in: OPEN_STATUSES } } }),
+    prisma.project.count({ where: { status: { in: OPEN_STATUSES }, ...owner } }),
     prisma.project.count({
-      where: { status: { in: OPEN_STATUSES }, dueDate: { lt: today } },
+      where: { status: { in: OPEN_STATUSES }, dueDate: { lt: today }, ...owner },
     }),
-    prisma.project.count({ where: { atRisk: true, status: { in: OPEN_STATUSES } } }),
+    prisma.project.count({ where: { atRisk: true, status: { in: OPEN_STATUSES }, ...owner } }),
     prisma.project.count({
-      where: { status: ProjectStatus.DONE, finishedAt: { gte: yearStart } },
+      where: { status: ProjectStatus.DONE, finishedAt: { gte: yearStart }, ...owner },
     }),
     prisma.project.aggregate({
-      where: { status: { in: OPEN_STATUSES } },
+      where: { status: { in: OPEN_STATUSES }, ...owner },
       _sum: { budget: true, actualCost: true },
     }),
   ]);
